@@ -7,7 +7,8 @@
 </head>
 
 <body>
-    <canvas id="myChart" max-width="100" max-height="100"></canvas>
+    <canvas id="queryCostsChart" max-width="100" max-height="100"></canvas>
+    <canvas id="querySizeChart" max-width="100" max-height="100"></canvas>
      <button onclick="refresh()" type="button">Refresh</button>
     <script>
     let apiUrl = 'http://127.0.0.1:5000/';
@@ -21,8 +22,48 @@
 
     var data = getJson(apiUrl + 'index_sizes');
 
-    var ctx = document.getElementById('myChart').getContext('2d');
-    myChart = new Chart(ctx, {
+    var ctx = document.getElementById('queryCostsChart').getContext('2d');
+    queryCostsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.queries,
+            datasets: [{
+                label: 'no indexes',
+                data: data.query_cost_no_index
+            },
+            {
+                label: 'estimated query costs',
+                data: data.query_costs,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    var ctx = document.getElementById('querySizeChart').getContext('2d');
+    querySizeChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: data.index_names,
@@ -59,10 +100,10 @@
 
     function refresh() {
         var data = getJson(apiUrl + 'index_sizes');
-        myChart.data.datasets[0].data = data.index_sizes;
-        myChart.data.labels = data.index_names;
+        querySizeChart.data.datasets[0].data = data.index_sizes;
+        querySizeChart.data.labels = data.index_names;
         console.log(data);
-        myChart.update();
+        querySizeChart.update();
     }
 
 
