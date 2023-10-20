@@ -2,14 +2,25 @@
 <html lang="en">
 
 <head>
+    <!-- Latest compiled and minified Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js"></script>
     <title>Index Analysis</title>
+    <style>
+.index-attribute:hover {
+    color: white;
+    background-color: #DC4C64;
+}
+
+    </style>
 </head>
 
 <body>
     <canvas id="queryCostsChart" max-width="100" max-height="100"></canvas>
     <canvas id="querySizeChart" max-width="100" max-height="100"></canvas>
-     <button onclick="refresh()" type="button">Refresh</button>
+    <div id="index_overview"></div>
+
+    <button onclick="refresh()" type="button">Refresh</button>
     <script>
     let apiUrl = 'http://127.0.0.1:5000/';
 
@@ -98,6 +109,39 @@
         }
     });
 
+    function remove(element) {
+        var parent = element.parentNode.parentNode;
+        var removed_attribute = element.textContent;
+
+        var index_id = parseInt(parent.id.slice(5, parent.id.length));
+        console.log(index_id);
+        console.log(parent.id, element.textContent);
+        var position = data.index_names[index_id].indexOf(removed_attribute);
+
+        data.index_names[index_id].splice(position, 1);
+        if (data.index_names[index_id] == 0) {
+            element.parentNode.parentNode.remove();
+        } else {
+          element.remove();
+        }
+    }
+
+    function constructIndexOverview(indexes) {
+        let index_overview_element = document.getElementById('index_overview');
+        index_overview_element.innerHTML = '';
+        for (var i = 0; i < indexes.length; i++) {
+            var index = indexes[i];
+            var index_element = '<div id="index' + i + '" ><div class="btn-group" role="group">';
+                for (var j = 0; j < index.length; j++) {
+                    index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + index[j] + '" onclick="remove(this)">' + index[j] + '<span class="glyphicon glyphicon-remove"></button>\n';
+            }
+            index_element +='</div></div>'
+            index_overview_element.innerHTML += index_element;
+        }
+    }
+
+    constructIndexOverview(data.index_names);
+
     function refresh() {
         var data = getJson(apiUrl + 'index_sizes');
         querySizeChart.data.datasets[0].data = data.index_sizes;
@@ -105,6 +149,7 @@
         console.log(data);
         querySizeChart.update();
     }
+
 
 
     </script>

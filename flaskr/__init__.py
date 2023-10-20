@@ -1,7 +1,7 @@
 import json
 import os
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, redirect, url_for
 
 
 def create_app(test_config=None, instance_relative_config=True):
@@ -25,7 +25,8 @@ def create_app(test_config=None, instance_relative_config=True):
 
     @app.route('/')
     def hello():
-        return 'Hello, World!'
+        # return 'Hello, World!'
+        return redirect(url_for('home'))
 
     @app.route("/home")
     def home():
@@ -42,7 +43,7 @@ def create_app(test_config=None, instance_relative_config=True):
         print(query_costs, type(query_costs))
         return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'query_cost_no_index': query_cost_no_index, 'queries': queries, 'query_costs': query_costs, })
 
-    def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=1, indexes_per_query=1, storage_budget=5*10**9):
+    def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
             solution_file = f'ILP/{benchmark}_cophy__width{index_width}__per_query{indexes_per_query}__query-based_solution.txt'
         else:
