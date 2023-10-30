@@ -32,6 +32,14 @@ def create_app(test_config=None, instance_relative_config=True):
     def home():
         return render_template("home.html")
 
+    @app.route('/index_calculation/<index_names_string>')
+    def index_calculation(index_names_string):
+        print(index_names_string, len(index_names_string))
+        data = json.loads(index_names_string)
+        print(data, len(data))
+
+        return jsonify({})
+
     @app.route('/index_sizes')
     def get_index_sizes():
         index_names, index_sizes, query_cost_information, query_cost_no_index = retrieve_index_sizes()

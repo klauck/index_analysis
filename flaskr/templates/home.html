@@ -119,11 +119,16 @@
         var position = data.index_names[index_id].indexOf(removed_attribute);
 
         data.index_names[index_id].splice(position, 1);
-        if (data.index_names[index_id] == 0) {
+        if (data.index_names[index_id].length == 0) {
+            data.index_names.splice(index_id, 1);
             element.parentNode.parentNode.remove();
         } else {
           element.remove();
         }
+        querySizeChart.update();
+        console.log(data.index_names);
+
+        var result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(data.index_names));
     }
 
     function constructIndexOverview(indexes) {
