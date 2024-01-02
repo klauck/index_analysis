@@ -12,12 +12,24 @@
     background-color: #DC4C64;
 }
 
+#cost_div {
+   float: left;
+   width: 1000px;
+}
+#size_div {
+   float: left;
+   width: 1000px;
+}
+#index_overview {
+   width: 100%;
+}
     </style>
 </head>
 
 <body>
-    <canvas id="queryCostsChart" max-width="100" max-height="100"></canvas>
-    <canvas id="querySizeChart" max-width="100" max-height="100"></canvas>
+    <div id="cost_div"><canvas id="queryCostsChart" max-width="100" max-height="100"></canvas></div>
+    <div id="size_div"><canvas id="querySizeChart" max-width="100" max-height="100"></canvas></div>
+
     <div id="index_overview"></div>
 
     <button onclick="refresh()" type="button">Refresh</button>
@@ -122,6 +134,10 @@
         if (data.index_names[index_id].length == 0) {
             data.index_names.splice(index_id, 1);
             element.parentNode.parentNode.remove();
+            for (var i=index_id + 1; i <= data.index_names.length; i++) {
+              document.getElementById('index' + i).id = "index" + (i - 1);
+            }
+
         } else {
           element.remove();
         }
@@ -129,6 +145,15 @@
         console.log(data.index_names);
 
         var result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(data.index_names));
+        data.query_costs = result.query_costs;
+        data.index_sizes = result.index_sizes;
+        querySizeChart.data.datasets[0].data = data.index_sizes;
+        queryCostsChart.data.datasets[1].data = data.query_costs;
+        console.log(data.index_sizes);
+
+        queryCostsChart.update()
+        querySizeChart.update();
+
     }
 
     function constructIndexOverview(indexes) {

@@ -1,7 +1,24 @@
 import json
+import logging
 import os
+import sys
+
+sys.path.append(os.path.abspath('index_selection_evaluation'))
 
 from flask import Flask, render_template, jsonify, redirect, url_for
+from selection.cost_evaluation import CostEvaluation
+from selection.dbms.postgres_dbms import PostgresDatabaseConnector
+from selection.index import Index
+from selection.table_generator import TableGenerator
+from selection.query_generator import QueryGenerator
+from selection.workload import Workload
+
+CONFIG = {
+    "benchmark_name": "tpch",
+    "scale_factor": 10,
+    "queries": [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 22],
+}
+logging.basicConfig(level=logging.DEBUG)
 
 
 def create_app(test_config=None, instance_relative_config=True):
@@ -38,7 +55,52 @@ def create_app(test_config=None, instance_relative_config=True):
         data = json.loads(index_names_string)
         print(data, len(data))
 
-        return jsonify({})
+        # setup database connection Connection
+        dbms_class = PostgresDatabaseConnector
+        generating_connector = dbms_class(None, autocommit=True)
+
+        # Attention: This might generate the benchmark tables
+        table_generator = TableGenerator(
+            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+        )
+        database_name = table_generator.database_name()
+        db_connector = PostgresDatabaseConnector(database_name)
+
+        query_generator = QueryGenerator(
+            CONFIG["benchmark_name"],
+            CONFIG["scale_factor"],
+            db_connector,
+            CONFIG["queries"],
+            table_generator.columns,
+        )
+
+        columns_per_name = {}
+        for column in table_generator.columns:
+            columns_per_name[column.name] = column
+
+        workload = Workload(query_generator.queries)
+        print(workload)
+
+        indexes = []
+        for index_string_list in json.loads(index_names_string):
+            column_names = []
+            for column_name in index_string_list:
+                column_names.append(columns_per_name[column_name])
+            indexes.append(Index(column_names))
+
+        cost_evaluation = CostEvaluation(db_connector)
+        query_costs = []
+        for query in workload.queries:
+            costs = cost_evaluation.calculate_cost(Workload([query]), indexes)
+            query_costs.append(costs)
+
+        index_sizes = []
+        for index in indexes:
+            cost_evaluation.estimate_size(index)
+            print(index, index.estimated_size)
+            index_sizes.append(index.estimated_size / 10**9)
+
+        return jsonify({'index_sizes': index_sizes, 'query_costs': query_costs})
 
     @app.route('/index_sizes')
     def get_index_sizes():
