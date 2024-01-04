@@ -9,6 +9,7 @@ from flask import Flask, render_template, jsonify, redirect, url_for
 from selection.cost_evaluation import CostEvaluation
 from selection.dbms.postgres_dbms import PostgresDatabaseConnector
 from selection.index import Index
+from selection.result_parser import parse_file
 from selection.table_generator import TableGenerator
 from selection.query_generator import QueryGenerator
 from selection.workload import Workload
@@ -19,6 +20,32 @@ CONFIG = {
     "queries": [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 22],
 }
 logging.basicConfig(level=logging.DEBUG)
+
+TABLEAU_COLORS = [
+    (31, 119, 180),
+    (225, 127, 14),
+    (44, 160, 44,),
+    (214, 39, 40),
+    (148, 103, 189),
+    (140, 86, 75),
+    (227, 119, 194),
+    (127, 127, 127),
+    (188, 189, 34),
+    (23, 190, 207)
+]
+
+POINT_STYLE = [
+    'circle',
+    'cross',
+    'crossRot',
+    'dash',
+    'line',
+    'rect',
+    'rectRounded',
+    'rectRot',
+    'star',
+    'triangle'
+]
 
 
 def create_app(test_config=None, instance_relative_config=True):
@@ -192,5 +219,31 @@ def create_app(test_config=None, instance_relative_config=True):
             print(query_cost_no_index)
 
         return index_names, index_sizes_l, query_cost_information, query_cost_no_index
+
+    @app.route('/summary')
+    def summary():
+        no_index_result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_tpch_19_queries.csv')
+        print(no_index_result)
+        no_index_costs = no_index_result[0][2]
+
+        datasets = []
+        for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'no_index', 'relaxation']):
+            result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
+
+            data = []
+            for line in result:
+                data.append({'x': line[0] / 1000, 'y': line[2] / no_index_costs})
+            algorithm_result = {
+                'label': algorithm,
+                'data': data,
+                'borderColor': f'rgba({TABLEAU_COLORS[i][0]}, {TABLEAU_COLORS[i][1]}, {TABLEAU_COLORS[i][2]}, 1)',
+                'backgroundColor': f'rgba({TABLEAU_COLORS[i][0]}, {TABLEAU_COLORS[i][1]}, {TABLEAU_COLORS[i][2]}, 0.2)',
+                'stepped': True,
+                'pointStyle': POINT_STYLE[i],
+                'radius': 7
+            }
+            datasets.append(algorithm_result)
+        print(datasets)
+        return jsonify(datasets)
 
     return app

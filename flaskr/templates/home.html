@@ -11,6 +11,10 @@
     color: white;
     background-color: #DC4C64;
 }
+#summary_div {
+   float: left;
+   width: 1000px;
+}
 
 #cost_div {
    float: left;
@@ -27,6 +31,7 @@
 </head>
 
 <body>
+    <div id="summary_div"><canvas id="summaryChart" max-width="100" max-height="100"></canvas></div>
     <div id="cost_div"><canvas id="queryCostsChart" max-width="100" max-height="100"></canvas></div>
     <div id="size_div"><canvas id="querySizeChart" max-width="100" max-height="100"></canvas></div>
 
@@ -42,6 +47,29 @@
         request.send(null);
         return JSON.parse(request.responseText);
     }
+
+    var summary_data = getJson(apiUrl + 'summary');
+    console.log(summary_data);
+
+    var ctx = document.getElementById('summaryChart').getContext('2d');
+    queryCostsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [500, 1000, 1500, 2000, 2500],
+            datasets: summary_data
+        },
+        options: {
+            showLine: true,
+            scales: {
+                x: {
+                    type: 'linear',
+                    beginAtZero: true
+                },
+                y: {
+                }
+            }
+        }
+    });
 
     var data = getJson(apiUrl + 'index_sizes');
 
