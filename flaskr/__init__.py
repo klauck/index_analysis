@@ -21,6 +21,16 @@ CONFIG = {
 }
 logging.basicConfig(level=logging.DEBUG)
 
+ALGORITHMS = [
+    'anytime',
+    'auto_admin',
+    'db2advis',
+    'dexter',
+    'drop',
+    'extend',
+    'relaxation'
+]
+
 TABLEAU_COLORS = [
     (31, 119, 180),
     (225, 127, 14),
@@ -185,7 +195,6 @@ def create_app(test_config=None, instance_relative_config=True):
             combination_per_id = {}  # used to speed up the lookup
             for index_combination in data['index_combinations']:
                 combination_id, index_ids = index_combination['combination_id'], index_combination['index_ids']
-                print(index_ids)
                 index_set = frozenset([index_per_id[index_id] for index_id in index_ids])
                 query_costs_for_index_combination[index_set] = {}
                 combination_per_id[combination_id] = index_set
@@ -224,15 +233,15 @@ def create_app(test_config=None, instance_relative_config=True):
     def summary():
         no_index_result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_tpch_19_queries.csv')
         print(no_index_result)
-        no_index_costs = no_index_result[0][2]
+        no_index_costs = sum(no_index_result[0][2])
 
         datasets = []
-        for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'no_index', 'relaxation']):
+        for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'relaxation']):
             result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
 
             data = []
             for line in result:
-                data.append({'x': line[0] / 1000, 'y': line[2] / no_index_costs})
+                data.append({'x': line[0] / 1000, 'y': sum(line[2]) / no_index_costs})
             algorithm_result = {
                 'label': algorithm,
                 'data': data,
@@ -245,5 +254,39 @@ def create_app(test_config=None, instance_relative_config=True):
             datasets.append(algorithm_result)
         print(datasets)
         return jsonify(datasets)
+
+    def get_query_cost_per_algorithm_and_budget(algorithm, budget):
+        result = parse_file(os.path.dirname(os.path.abspath(
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
+        query_cost = None
+        for line in result:
+            if line[0] / 1000 == budget:
+                query_cost = line[2]
+        assert query_cost is not None
+        return query_cost
+
+    def get_color(algorithm):
+        i = ALGORITHMS.index(algorithm)
+        return TABLEAU_COLORS[i]
+
+    @app.route('/query_cost_per_algorithm/<algorithm_list_string>')
+    def query_cost_per_algorithm(algorithm_list_string):
+        print(algorithm_list_string)
+        algorithms = json.loads(algorithm_list_string)
+        print(algorithms)
+        costs_per_algorithm = []
+        # 'no_index': get_query_cost_per_algorithm_and_budget('no_index', 0)
+        for algorithm in algorithms:
+            color = get_color(algorithm[0])
+            costs_per_algorithm.append({
+                'label': f'{algorithm[0]} {algorithm[1]}',
+                'data': get_query_cost_per_algorithm_and_budget(algorithm[0], algorithm[1]),
+                'borderColor': f'rgba({color[0]}, {color[1]}, {color[2]}, 1)',
+                'backgroundColor': f'rgba({color[0]}, {color[1]}, {color[2]}, {algorithm[1] / 15})',
+                'borderWidth': 1
+            })
+        print(costs_per_algorithm)
+
+        return jsonify(costs_per_algorithm)
 
     return app

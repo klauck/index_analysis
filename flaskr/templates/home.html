@@ -42,7 +42,7 @@
     </nav>
 <div>
     <div id="summary_div"><canvas id="summaryChart" max-width="100" max-height="100"></canvas></div>
-    <div id="cost_div" class="d-none"><canvas id="queryCostsChart" max-width="100" max-height="100"></canvas></div>
+    <div id="cost_div" class=""><canvas id="queryCostsChart" max-width="100" max-height="100"></canvas></div>
     <div id="size_div"><canvas id="querySizeChart" max-width="100" max-height="100"></canvas></div>
 
     <div id="index_overview"></div>
@@ -72,15 +72,25 @@
             let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
             if (index == -1) {
                 selectedAlgorithms.push([algorithm, memory_budget]);
-                console.log(selectedAlgorithms);
+                console.log('remove');
+                $('#cost_div').removeClass('d-none');
+                var result = getJson(apiUrl + 'query_cost_per_algorithm/' + JSON.stringify([[algorithm, memory_budget]]));
+                for (i = 0; i < result.length; i++) {
+                    queryCostsChart.data.datasets.push(result[i]);
+                }
                 $('#cost_div').removeClass('d-none');
             }
             else {
                 selectedAlgorithms.splice(index, 1);
-                if (selectedAlgorithms.length == 0) {
-                    $('#cost_div').addClass('d-none');
-                }
+                let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
+                console.log('chart costs remove ' + index2);
+                queryCostsChart.data.datasets.splice(index2, 1);
+<!--                if (selectedAlgorithms.length == 0) {-->
+<!--                    $('#cost_div').addClass('d-none');-->
+<!--                }-->
             }
+            console.log(selectedAlgorithms);
+            queryCostsChart.update();
         }
     }
 
@@ -116,27 +126,7 @@
                 label: 'no indexes',
                 data: data.query_cost_no_index
             },
-            {
-                label: 'estimated query costs',
-                data: data.query_costs,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)'
-                ],
-                borderWidth: 1
-            }]
+            ]
         },
         options: {
             scales: {
