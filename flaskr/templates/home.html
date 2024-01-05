@@ -12,22 +12,40 @@
     color: white;
     background-color: #DC4C64;
 }
+
+#general_info {
+   width: 100%;
+}
+
 #summary_div {
-   float: left;
+   display: inline-block;
    width: 1000px;
 }
 
 #cost_div {
-   float: left;
+   display: inline-block;
    width: 1000px;
 }
 #size_div {
-   float: left;
-   width: 1000px;
+   display: inline-block;
+   width: 666px;
+   background-color: white;
 }
 #index_overview {
-   width: 100%;
+    display: inline-block;
 }
+
+#details_per_selection {
+    background-color: #F0F0F0;
+    padding: 10px;
+}
+
+.selection_details {
+    background-color: white;
+    margin: 10px;
+    padding: 10px;
+}
+
     </style>
 </head>
 
@@ -41,13 +59,17 @@
       </div>
     </nav>
 <div>
-    <div id="summary_div"><canvas id="summaryChart" max-width="100" max-height="100"></canvas></div>
-    <div id="cost_div" class=""><canvas id="queryCostsChart" max-width="100" max-height="100"></canvas></div>
-    <div id="size_div"><canvas id="querySizeChart" max-width="100" max-height="100"></canvas></div>
-
-    <div id="index_overview"></div>
-
-    <button onclick="refresh()" type="button">Refresh</button>
+    <div id="general_info">
+        <div id="summary_div"><canvas id="summaryChart" max-width="1000" max-height="1000"></canvas></div>
+        <div id="cost_div" class=""><canvas id="queryCostsChart" max-width="1000" max-height="1000"></canvas></div>
+    </div>
+    <div id="details_per_selection">
+        <div id="details_ilp" class="selection_details">
+            <h3>ILP 4 GB</h3>
+            <div id="size_div"><canvas id="querySizeChart" max-width="666" max-height="666"></canvas></div>
+            <div id="index_overview"></div>
+        </div>
+    </div>
 </div>
 
     <script>
@@ -223,15 +245,6 @@
     }
 
     constructIndexOverview(data.index_names);
-
-    function refresh() {
-        var data = getJson(apiUrl + 'index_sizes');
-        querySizeChart.data.datasets[0].data = data.index_sizes;
-        querySizeChart.data.labels = data.index_names;
-        console.log(data);
-        querySizeChart.update();
-    }
-
 
 
     </script>
