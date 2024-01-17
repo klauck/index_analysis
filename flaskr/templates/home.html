@@ -44,6 +44,8 @@
     background-color: white;
     margin: 10px;
     padding: 10px;
+    width: 500px;
+    float: left;
 }
 
     </style>
@@ -92,6 +94,7 @@
             let algorithm = summaryData[elements[0].datasetIndex].label;
             let memory_budget = summaryData[elements[0].datasetIndex].data[elements[0].index].x;
             let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
+            let approach_id = algorithm + '_' + memory_budget;
             if (index == -1) {
                 <!-- new approach got selected -->
                 selectedAlgorithms.push([algorithm, memory_budget]);
@@ -103,6 +106,52 @@
                 }
                 $('#cost_div').removeClass('d-none');
                 <!-- TODO: add approach details -->
+                var result = getJson(apiUrl + 'index_sizes/' + JSON.stringify([algorithm, memory_budget]));
+                let approach_id = algorithm + '_' + memory_budget;
+                var dom_element = '<div id="' + approach_id + '_details" class="selection_details">\n' +
+            '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
+            '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + 'indexSizeChart" max-width="666" max-height="666"></canvas></div>\n' +
+            '<div id="' + approach_id + 'index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
+        '</div>\n'
+                $('#details_per_selection').append($(dom_element));
+
+                var ctx = document.getElementById(approach_id + 'indexSizeChart').getContext('2d');
+                    querySizeChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: result.index_names,
+                        datasets: [{
+                            label: 'estimated index size',
+                            data: result.index_sizes,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                                'rgba(75, 192, 192, 0.2)',
+                                'rgba(153, 102, 255, 0.2)',
+                                'rgba(255, 159, 64, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                constructIndexOverview(approach_id, result.index_names);
             }
             else {
                 <!-- previously selected approach got deselected -->
@@ -113,7 +162,9 @@
 <!--                if (selectedAlgorithms.length == 0) {-->
 <!--                    $('#cost_div').addClass('d-none');-->
 <!--                }-->
-                <!-- TODO: remove approach details -->
+                <!-- remove approach details -->
+                console.log('#' + approach_id + '_details remove');
+                $(document.getElementById(approach_id + '_details')).remove();
             }
             console.log(selectedAlgorithms);
             queryCostsChart.update();
@@ -140,7 +191,7 @@
         }
     });
 
-    var data = getJson(apiUrl + 'index_sizes');
+    var data = getJson(apiUrl + 'index_sizes/' + JSON.stringify(["ILP", 4000]));
 
     var ctx = document.getElementById('queryCostsChart').getContext('2d');
     queryCostsChart = new Chart(ctx, {
@@ -233,12 +284,12 @@
 
     }
 
-    function constructIndexOverview(indexes) {
-        let index_overview_element = document.getElementById('index_overview');
+    function constructIndexOverview(approach_id, indexes) {
+        let index_overview_element = document.getElementById(approach_id + 'index_overview');
         index_overview_element.innerHTML = '';
         for (var i = 0; i < indexes.length; i++) {
             var index = indexes[i];
-            var index_element = '<div id="index' + i + '" ><div class="btn-group" role="group">';
+            var index_element = '<div id="' + approach_id + 'index' + i + '" ><div class="btn-group" role="group">';
                 for (var j = 0; j < index.length; j++) {
                     index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + index[j] + '" onclick="remove(this)">' + index[j] + '<span class="glyphicon glyphicon-remove"></button>\n';
             }
@@ -247,7 +298,7 @@
         }
     }
 
-    constructIndexOverview(data.index_names);
+    constructIndexOverview('', data.index_names);
 
 
     </script>

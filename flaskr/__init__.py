@@ -139,16 +139,24 @@ def create_app(test_config=None, instance_relative_config=True):
 
         return jsonify({'index_sizes': index_sizes, 'query_costs': query_costs})
 
-    @app.route('/index_sizes')
-    def get_index_sizes():
-        index_names, index_sizes, query_cost_information, query_cost_no_index = retrieve_index_sizes()
-        print(index_names, index_sizes)
-        index_sizes = [size/10**9 for size in index_sizes]
-        queries = [query_number for query_number, _, _ in query_cost_information]
-        query_costs = [query_cost for _, _, query_cost in query_cost_information]
-        print(query_cost_no_index, type(query_cost_no_index))
-        print(query_costs, type(query_costs))
-        return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'query_cost_no_index': query_cost_no_index, 'queries': queries, 'query_costs': query_costs, })
+    @app.route('/index_sizes/<approach_string>')
+    def get_index_sizes(approach_string):
+        print(approach_string)
+        algorithm, storage_budget = json.loads(approach_string)
+
+        if algorithm == "ILP" and storage_budget == 4000:
+            index_names, index_sizes, query_cost_information, query_cost_no_index = retrieve_index_sizes()
+            print(index_names, index_sizes)
+            index_sizes = [size/10**9 for size in index_sizes]
+            queries = [query_number for query_number, _, _ in query_cost_information]
+            query_costs = [query_cost for _, _, query_cost in query_cost_information]
+            print(query_cost_no_index, type(query_cost_no_index))
+            print(query_costs, type(query_costs))
+            return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'query_cost_no_index': query_cost_no_index, 'queries': queries, 'query_costs': query_costs, })
+        else:
+            index_names, index_sizes = get_indexes_per_algorithm_and_budget(algorithm, storage_budget)
+            print(index_names, index_sizes)
+            return jsonify({'index_names': index_names, 'index_sizes': index_sizes})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
@@ -254,6 +262,18 @@ def create_app(test_config=None, instance_relative_config=True):
             datasets.append(algorithm_result)
         print(datasets)
         return jsonify(datasets)
+
+    def get_indexes_per_algorithm_and_budget(algorithm, budget):
+        result = parse_file(os.path.dirname(os.path.abspath(
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
+        indexes = None
+        for line in result:
+            if line[0] / 1000 == budget:
+                indexes = line[3]
+        print(indexes)
+        assert indexes is not None
+        index_sizes = [0 for _ in indexes]
+        return indexes, index_sizes
 
     def get_query_cost_per_algorithm_and_budget(algorithm, budget):
         result = parse_file(os.path.dirname(os.path.abspath(
