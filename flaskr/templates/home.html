@@ -66,7 +66,7 @@
     <div id="details_per_selection">
         <div id="details_ilp" class="selection_details">
             <h3>ILP 4 GB</h3>
-            <div id="size_div"><canvas id="querySizeChart" max-width="666" max-height="666"></canvas></div>
+            <div id="size_div"><canvas id="indexSizeChart" max-width="666" max-height="666"></canvas></div>
             <div id="index_overview"></div>
         </div>
     </div>
@@ -93,6 +93,7 @@
             let memory_budget = summaryData[elements[0].datasetIndex].data[elements[0].index].x;
             let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
             if (index == -1) {
+                <!-- new approach got selected -->
                 selectedAlgorithms.push([algorithm, memory_budget]);
                 console.log('remove');
                 $('#cost_div').removeClass('d-none');
@@ -101,8 +102,10 @@
                     queryCostsChart.data.datasets.push(result[i]);
                 }
                 $('#cost_div').removeClass('d-none');
+                <!-- TODO: add approach details -->
             }
             else {
+                <!-- previously selected approach got deselected -->
                 selectedAlgorithms.splice(index, 1);
                 let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
                 console.log('chart costs remove ' + index2);
@@ -110,6 +113,7 @@
 <!--                if (selectedAlgorithms.length == 0) {-->
 <!--                    $('#cost_div').addClass('d-none');-->
 <!--                }-->
+                <!-- TODO: remove approach details -->
             }
             console.log(selectedAlgorithms);
             queryCostsChart.update();
@@ -120,7 +124,6 @@
     queryCostsChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [500, 1000, 1500, 2000, 2500],
             datasets: summaryData
         },
         options: {
@@ -159,7 +162,7 @@
         }
     });
 
-    var ctx = document.getElementById('querySizeChart').getContext('2d');
+    var ctx = document.getElementById('indexSizeChart').getContext('2d');
     querySizeChart = new Chart(ctx, {
         type: 'bar',
         data: {
