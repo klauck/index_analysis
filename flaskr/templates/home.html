@@ -67,11 +67,11 @@
         <div id="cost_div" class=""><canvas id="queryCostsChart" max-width="1000" max-height="1000"></canvas></div>
     </div>
     <div id="details_per_selection">
-        <div id="details_ilp" class="selection_details">
-            <h3>ILP 4 GB</h3>
-            <div id="size_div"><canvas id="indexSizeChart" max-width="666" max-height="666"></canvas></div>
-            <div id="index_overview"></div>
-        </div>
+<!--        <div id="details_ilp" class="selection_details">-->
+<!--            <h3>ILP 4 GB</h3>-->
+<!--            <div id="size_div"><canvas id="indexSizeChart" max-width="666" max-height="666"></canvas></div>-->
+<!--            <div id="index_overview"></div>-->
+<!--        </div>-->
     </div>
 </div>
 
@@ -214,41 +214,41 @@
         }
     });
 
-    var ctx = document.getElementById('indexSizeChart').getContext('2d');
-    querySizeChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.index_names,
-            datasets: [{
-                label: 'estimated index size',
-                data: data.index_sizes,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
+<!--    var ctx = document.getElementById('indexSizeChart').getContext('2d');-->
+<!--    querySizeChart = new Chart(ctx, {-->
+<!--        type: 'bar',-->
+<!--        data: {-->
+<!--            labels: data.index_names,-->
+<!--            datasets: [{-->
+<!--                label: 'estimated index size',-->
+<!--                data: data.index_sizes,-->
+<!--                backgroundColor: [-->
+<!--                    'rgba(255, 99, 132, 0.2)',-->
+<!--                    'rgba(54, 162, 235, 0.2)',-->
+<!--                    'rgba(255, 206, 86, 0.2)',-->
+<!--                    'rgba(75, 192, 192, 0.2)',-->
+<!--                    'rgba(153, 102, 255, 0.2)',-->
+<!--                    'rgba(255, 159, 64, 0.2)'-->
+<!--                ],-->
+<!--                borderColor: [-->
+<!--                    'rgba(255, 99, 132, 1)',-->
+<!--                    'rgba(54, 162, 235, 1)',-->
+<!--                    'rgba(255, 206, 86, 1)',-->
+<!--                    'rgba(75, 192, 192, 1)',-->
+<!--                    'rgba(153, 102, 255, 1)',-->
+<!--                    'rgba(255, 159, 64, 1)'-->
+<!--                ],-->
+<!--                borderWidth: 1-->
+<!--            }]-->
+<!--        },-->
+<!--        options: {-->
+<!--            scales: {-->
+<!--                y: {-->
+<!--                    beginAtZero: true-->
+<!--                }-->
+<!--            }-->
+<!--        }-->
+<!--    });-->
 
     function remove(element) {
         var parent = element.parentNode.parentNode;
@@ -299,7 +299,7 @@
         }
     }
 
-    constructIndexOverview('', data.index_names);
+<!--    constructIndexOverview('', data.index_names);-->
 
 
     </script>

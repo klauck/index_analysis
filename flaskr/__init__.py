@@ -277,7 +277,9 @@ def create_app(test_config=None, instance_relative_config=True):
         for i, index in enumerate(indexes):
             indexes[i] = [column.split('.')[1] for column in index]
 
-        index_sizes = estimate_index_sizes(indexes)
+        index_sizes = [0 for index in indexes]
+        # the next line requires a PostgreSQL database connection
+        # index_sizes = estimate_index_sizes(indexes)
         return indexes, index_sizes
 
     def get_query_cost_per_algorithm_and_budget(algorithm, budget):
