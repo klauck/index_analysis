@@ -272,7 +272,12 @@ def create_app(test_config=None, instance_relative_config=True):
                 indexes = line[3]
         print(indexes)
         assert indexes is not None
-        index_sizes = [0 for _ in indexes]
+
+        # remove table name
+        for i, index in enumerate(indexes):
+            indexes[i] = [column.split('.')[1] for column in index]
+
+        index_sizes = estimate_index_sizes(indexes)
         return indexes, index_sizes
 
     def get_query_cost_per_algorithm_and_budget(algorithm, budget):
@@ -308,5 +313,38 @@ def create_app(test_config=None, instance_relative_config=True):
         print(costs_per_algorithm)
 
         return jsonify(costs_per_algorithm)
+
+    def estimate_index_sizes(index_string_list):
+        # TODO: put first part in separate function
+        # setup database connection Connection
+        dbms_class = PostgresDatabaseConnector
+        generating_connector = dbms_class(None, autocommit=True)
+
+        # Attention: This might generate the benchmark tables
+        table_generator = TableGenerator(
+            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+        )
+        database_name = table_generator.database_name()
+        db_connector = PostgresDatabaseConnector(database_name)
+
+        columns_per_name = {}
+        for column in table_generator.columns:
+            columns_per_name[column.name] = column
+
+        indexes = []
+        for column_string_list in index_string_list:
+            columns = []
+            for column_name in column_string_list:
+                columns.append(columns_per_name[column_name])
+            indexes.append(Index(columns))
+
+        cost_evaluation = CostEvaluation(db_connector)
+        index_sizes = []
+        for index in indexes:
+            cost_evaluation.estimate_size(index)
+            print(index, index.estimated_size)
+            index_sizes.append(index.estimated_size / 10 ** 9)
+
+        return index_sizes
 
     return app
