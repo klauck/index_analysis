@@ -67,11 +67,6 @@
         <div id="cost_div" class=""><canvas id="queryCostsChart" max-width="1000" max-height="1000"></canvas></div>
     </div>
     <div id="details_per_selection">
-        <div id="details_ilp" class="selection_details">
-            <h3>ILP 4 GB</h3>
-            <div id="size_div"><canvas id="indexSizeChart" max-width="666" max-height="666"></canvas></div>
-            <div id="index_overview"></div>
-        </div>
     </div>
 </div>
 
@@ -86,6 +81,7 @@
     }
 
     var selectedAlgorithms = [];
+    var querySizeCharts = []
 
     var summaryData = getJson(apiUrl + 'summary');
     console.log(summaryData);
@@ -95,7 +91,7 @@
             let algorithm = summaryData[elements[0].datasetIndex].label;
             let memory_budget = summaryData[elements[0].datasetIndex].data[elements[0].index].x;
             let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
-            let approach_id = algorithm + '_' + memory_budget;
+            let approach_id = algorithm + '__' + memory_budget;
             if (index == -1) {
                 <!-- new approach got selected -->
                 selectedAlgorithms.push([algorithm, memory_budget]);
@@ -105,41 +101,29 @@
                 for (i = 0; i < result.length; i++) {
                     queryCostsChart.data.datasets.push(result[i]);
                 }
+                let borderColor = result[0].borderColor;
+                let backgroundColor = result[0].backgroundColor;
+                console.log(borderColor, backgroundColor);
                 $('#cost_div').removeClass('d-none');
                 <!-- TODO: add approach details -->
                 var result = getJson(apiUrl + 'index_sizes/' + JSON.stringify([algorithm, memory_budget]));
-                let approach_id = algorithm + '_' + memory_budget;
-                var dom_element = '<div id="' + approach_id + '_details" class="selection_details">\n' +
+                var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
             '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
-            '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + 'indexSizeChart" max-width="666" max-height="666"></canvas></div>\n' +
-            '<div id="' + approach_id + 'index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
+            '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" max-width="666" max-height="666"></canvas></div>\n' +
+            '<div id="' + approach_id + '__index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
         '</div>\n'
                 $('#details_per_selection').append($(dom_element));
 
-                var ctx = document.getElementById(approach_id + 'indexSizeChart').getContext('2d');
-                    querySizeChart = new Chart(ctx, {
+                let ctx = document.getElementById(approach_id + '__indexSizeChart').getContext('2d');
+                let querySizeChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: result.index_names,
                         datasets: [{
                             label: 'estimated index size',
                             data: result.index_sizes,
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.2)',
-                                'rgba(54, 162, 235, 0.2)',
-                                'rgba(255, 206, 86, 0.2)',
-                                'rgba(75, 192, 192, 0.2)',
-                                'rgba(153, 102, 255, 0.2)',
-                                'rgba(255, 159, 64, 0.2)'
-                            ],
-                            borderColor: [
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(153, 102, 255, 1)',
-                                'rgba(255, 159, 64, 1)'
-                            ],
+                            backgroundColor: [backgroundColor],
+                            borderColor: [borderColor],
                             borderWidth: 1
                         }]
                     },
@@ -151,12 +135,14 @@
                         }
                     }
                 });
+                querySizeCharts.push(querySizeChart);
 
                 constructIndexOverview(approach_id, result.index_names);
             }
             else {
                 <!-- previously selected approach got deselected -->
                 selectedAlgorithms.splice(index, 1);
+                querySizeCharts.splice(index, 1);
                 let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
                 console.log('chart costs remove ' + index2);
                 queryCostsChart.data.datasets.splice(index2, 1);
@@ -164,8 +150,8 @@
 <!--                    $('#cost_div').addClass('d-none');-->
 <!--                }-->
                 <!-- remove approach details -->
-                console.log('#' + approach_id + '_details remove');
-                $(document.getElementById(approach_id + '_details')).remove();
+                console.log('#' + approach_id + '__details remove');
+                $(document.getElementById(approach_id + '__details')).remove();
             }
             console.log(selectedAlgorithms);
             queryCostsChart.update();
@@ -214,83 +200,64 @@
         }
     });
 
-    var ctx = document.getElementById('indexSizeChart').getContext('2d');
-    querySizeChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.index_names,
-            datasets: [{
-                label: 'estimated index size',
-                data: data.index_sizes,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
 
     function remove(element) {
         var parent = element.parentNode.parentNode;
         var removed_attribute = element.textContent;
+        let index_overview = element.parentNode.parentNode.parentNode;
+        console.log(index_overview.id);
+        console.assert(index_overview.id.split('__').slice(-1) == 'index_overview');
 
-        var index_id = parseInt(parent.id.slice(5, parent.id.length));
+        let index_information = parent.id.split('__')
+        console.assert(index_information.length == 3);
+
+        let algorithm = index_information[0];
+        let memory_budget = index_information[1];
+
+        let index_id = index_information[2];
         console.log(index_id);
         console.log(parent.id, element.textContent);
-        var position = data.index_names[index_id].indexOf(removed_attribute);
 
-        data.index_names[index_id].splice(position, 1);
-        if (data.index_names[index_id].length == 0) {
-            data.index_names.splice(index_id, 1);
+        if (element.parentNode.children.length == 1) {
+            // remove index
             element.parentNode.parentNode.remove();
-            for (var i=index_id + 1; i <= data.index_names.length; i++) {
-              document.getElementById('index' + i).id = "index" + (i - 1);
-            }
 
         } else {
-          element.remove();
+            // remove index attribute
+            element.remove();
         }
-        querySizeChart.update();
-        console.log(data.index_names);
 
-        var result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(data.index_names));
-        data.query_costs = result.query_costs;
-        data.index_sizes = result.index_sizes;
-        querySizeChart.data.datasets[0].data = data.index_sizes;
-        queryCostsChart.data.datasets[1].data = data.query_costs;
-        console.log(data.index_sizes);
+        let index_names = [];
+        for (i=0; i<index_overview.children.length; i++) {
+            let index = [];
+            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
+                index.push(index_overview.children[i].children[0].children[j].textContent);
+            }
+            index_names.push(index);
+        }
+        console.log(index_names);
+        let result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
+        console.log(result.index_sizes);
 
+        let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
+        querySizeCharts[position].data.datasets[0].data = result.index_sizes;
+        querySizeCharts[position].data.labels = index_names;
+        querySizeCharts[position].update();
+
+        // use individual updates for smooth animation
+        for (i = 0; i < result.query_costs.length; i++) {
+            queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
+        }
         queryCostsChart.update()
-        querySizeChart.update();
 
     }
 
     function constructIndexOverview(approach_id, indexes) {
-        let index_overview_element = document.getElementById(approach_id + 'index_overview');
+        let index_overview_element = document.getElementById(approach_id + '__index_overview');
         index_overview_element.innerHTML = '';
         for (var i = 0; i < indexes.length; i++) {
             var index = indexes[i];
-            var index_element = '<div id="' + approach_id + 'index' + i + '" ><div class="btn-group" role="group">';
+            var index_element = '<div id="' + approach_id + '__index' + i + '" ><div class="btn-group" role="group">';
                 for (var j = 0; j < index.length; j++) {
                     index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + index[j] + '" onclick="remove(this)">' + index[j] + '<span class="glyphicon glyphicon-remove"></button>\n';
             }
@@ -298,9 +265,6 @@
             index_overview_element.innerHTML += index_element;
         }
     }
-
-    constructIndexOverview('', data.index_names);
-
 
     </script>
 </body>
