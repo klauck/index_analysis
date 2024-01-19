@@ -5,6 +5,8 @@
     <!-- Latest compiled and minified Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.3.2/chart.min.js"></script>
     <title>Index Analysis</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
@@ -15,17 +17,25 @@
 }
 
 #general_info {
+   background-color: #F0F0F0;
    width: 100%;
+   padding: 10px;
 }
 
 #summary_div {
+   background-color: white;
    display: inline-block;
-   width: 1000px;
+   margin: 10px;
+   padding: 10px;
+   width: 1020px;
 }
 
 #cost_div {
+   background-color: white;
    display: inline-block;
-   width: 1000px;
+   margin: 10px;
+   padding: 10px;
+   width: 1020px;
 }
 #size_div {
    display: inline-block;
@@ -39,6 +49,8 @@
 #details_per_selection {
     background-color: #F0F0F0;
     padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
 }
 
 .selection_details {
@@ -49,17 +61,40 @@
     float: left;
 }
 
+.btn-group {
+    margin: 2px;
+}
+
+.btn {
+    .padding: .25em !important;
+    margin-left: .1em;
+    margin-right: .1em;
+}
+
     </style>
 </head>
 
 <body>
-    <nav class="navbar navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <a class="navbar-brand" href="#">
         <img src="{{ url_for('static', filename='images/PostgreSQL_logo.png') }}" width="30" height="30" class="d-inline-block align-top" alt=""> Index Analysis
       </a>
-      <div class="navbar-item active">
-          TPC-H (SF=10)
-      </div>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNavDropdown">
+    <ul class="navbar-nav">
+      <li class="nav-item dropdown active">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Workload: TPC-H (SF=10)
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+          <a class="dropdown-item" href="#">TPC-H (SF=10)</a>
+          <a class="dropdown-item" href="#">JOB</a>
+        </div>
+      </li>
+    </ul>
+  </div>
     </nav>
 <div>
     <div id="general_info">
@@ -218,7 +253,7 @@
         console.log(index_id);
         console.log(parent.id, element.textContent);
 
-        if (element.parentNode.children.length == 1) {
+        if (element.parentNode.children.length == 2) {
             // remove index
             element.parentNode.parentNode.remove();
 
@@ -228,9 +263,9 @@
         }
 
         let index_names = [];
-        for (i=0; i<index_overview.children.length; i++) {
+        for (i=0; i<index_overview.children.length - 1; i++) {
             let index = [];
-            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
+            for (j=0; j<index_overview.children[i].children[0].children.length - 1; j++) {
                 index.push(index_overview.children[i].children[0].children[j].textContent);
             }
             index_names.push(index);
@@ -257,13 +292,34 @@
         index_overview_element.innerHTML = '';
         for (var i = 0; i < indexes.length; i++) {
             var index = indexes[i];
-            var index_element = '<div id="' + approach_id + '__index' + i + '" ><div class="btn-group" role="group">';
+            var index_element = '<div id="' + approach_id + '__index' + i + '" ><div class="btn-group btn-group-sm" role="group">';
                 for (var j = 0; j < index.length; j++) {
                     index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + index[j] + '" onclick="remove(this)">' + index[j] + '<span class="glyphicon glyphicon-remove"></button>\n';
             }
+            index_element += '<div class="dropdown">' +
+                                '<button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
+                                    'add attribute' +
+                                '</button>' +
+                                '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">' +
+                                    '<a class="dropdown-item" href="#">Action</a>' +
+                                    '<a class="dropdown-item" href="#">Another action</a>' +
+                                    '<a class="dropdown-item" href="#">Something else here</a>' +
+                                  '</div>' +
+                                '</div>';
             index_element +='</div></div>'
             index_overview_element.innerHTML += index_element;
         }
+        index_overview_element.innerHTML += '<div class="dropdown">' +
+                                '<button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
+                                    'add index' +
+                                '</button>' +
+                                '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">' +
+                                    '<a class="dropdown-item" href="#">Action</a>' +
+                                    '<a class="dropdown-item" href="#">Another action</a>' +
+                                    '<a class="dropdown-item" href="#">Something else here</a>' +
+                                  '</div>' +
+                                '</div>';
+
     }
 
     </script>
