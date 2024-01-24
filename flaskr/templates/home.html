@@ -37,14 +37,6 @@
    padding: 10px;
    width: 1020px;
 }
-#size_div {
-   display: inline-block;
-   width: 666px;
-   background-color: white;
-}
-#index_overview {
-    display: inline-block;
-}
 
 #details_per_selection {
     background-color: #F0F0F0;
@@ -148,7 +140,7 @@
                 var result = getJson(apiUrl + 'index_sizes/' + JSON.stringify([algorithm, memory_budget]));
                 var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
             '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
-            '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" max-width="666" max-height="666"></canvas></div>\n' +
+            '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" width="480" height="350"></canvas></div>\n' +
             '<div id="' + approach_id + '__index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
             '<div id="' + approach_id + '__add_index"></div>\n' +
         '</div>\n'
@@ -168,9 +160,47 @@
                         }]
                     },
                     options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Estimated Index Sizes',
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        },
                         scales: {
+                            x: {
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'index (attributes)',
+                                    font: {
+                                        size: 16
+                                    }
+                                }
+                            },
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                ticks: {
+                                    font: {
+                                        size: 16
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'index storage consumption (GB)',
+                                    font: {
+                                        size: 16
+                                    }
+                                }
                             }
                         }
                     }
@@ -205,13 +235,53 @@
             datasets: summaryData
         },
         options: {
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Solution Summary: Cost Relative to Processing without Indexes.',
+                    font: {
+                        size: 16
+                    }
+                }
+            },
             showLine: true,
             scales: {
                 x: {
                     type: 'linear',
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 16
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'index storage consumption (GB)',
+                        font: {
+                            size: 16
+                        }
+                    }
                 },
                 y: {
+                    ticks: {
+                        font: {
+                            size: 16
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'relative workload cost',
+                        font: {
+                            size: 16
+                        }
+                    }
                 }
             },
             onClick: summaryOnClickHandler,
@@ -232,9 +302,51 @@
             ]
         },
         options: {
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Estimated processing cost per query',
+                    font: {
+                        size: 16
+                    }
+                }
+            },
             scales: {
+                x: {
+                    ticks: {
+                        font: {
+                            size: 16
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'query id',
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 16
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'PostgreSQL query cost',
+                        font: {
+                            size: 16
+                        }
+                    }
                 }
             }
         }
