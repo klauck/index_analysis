@@ -118,15 +118,16 @@
     console.log(summaryData);
 
     function summaryOnClickHandler(event, elements, chart) {
-        if (elements.length == 1) {
-            let algorithm = summaryData[elements[0].datasetIndex].label;
-            let memory_budget = summaryData[elements[0].datasetIndex].data[elements[0].index].x;
+        console.log('summaryOnClickHandler' + elements.length);
+        for (let ii = 0; ii < elements.length; ii++) {
+            let algorithm = summaryData[elements[ii].datasetIndex].label;
+            let memory_budget = summaryData[elements[ii].datasetIndex].data[elements[ii].index].x;
             let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
             let approach_id = algorithm + '__' + memory_budget;
             if (index == -1) {
                 <!-- new approach got selected -->
                 selectedAlgorithms.push([algorithm, memory_budget]);
-                console.log('remove');
+                console.log('select: ' + [algorithm, memory_budget]);
                 $('#cost_div').removeClass('d-none');
                 var result = getJson(apiUrl + 'query_cost_per_algorithm/' + JSON.stringify([[algorithm, memory_budget]]));
                 for (i = 0; i < result.length; i++) {
@@ -211,6 +212,7 @@
             }
             else {
                 <!-- previously selected approach got deselected -->
+                console.log('deselect: ' + approach_id);
                 selectedAlgorithms.splice(index, 1);
                 querySizeCharts.splice(index, 1);
                 let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
