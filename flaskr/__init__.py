@@ -139,6 +139,28 @@ def create_app(test_config=None, instance_relative_config=True):
 
         return jsonify({'index_sizes': index_sizes, 'query_costs': query_costs})
 
+    def get_index_extension_options(index):
+        """returns a list of attributes to extend an index"""
+        # setup database connection Connection
+        dbms_class = PostgresDatabaseConnector
+        generating_connector = dbms_class(None, autocommit=True)
+
+        # Attention: This might generate the benchmark tables
+        table_generator = TableGenerator(
+            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+        )
+
+        columns_per_name = {}
+        for column in table_generator.columns:
+            columns_per_name[column.name] = column
+
+        index_table = columns_per_name[index[0]].table
+        extension_options = []
+        for column in index_table.columns:
+            if column.name not in index:
+                extension_options.append(column.name)
+        return extension_options
+
     @app.route('/index_sizes/<approach_string>')
     def get_index_sizes(approach_string):
         print(approach_string)
@@ -155,8 +177,11 @@ def create_app(test_config=None, instance_relative_config=True):
             return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'query_cost_no_index': query_cost_no_index, 'queries': queries, 'query_costs': query_costs, })
         else:
             index_names, index_sizes = get_indexes_per_algorithm_and_budget(algorithm, storage_budget)
-            print(index_names, index_sizes)
-            return jsonify({'index_names': index_names, 'index_sizes': index_sizes})
+            extension_options_per_index = []
+            for index in index_names:
+                extension_options_per_index.append(get_index_extension_options(index))
+            print(index_names, index_sizes, extension_options_per_index)
+            return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
