@@ -161,6 +161,31 @@ def create_app(test_config=None, instance_relative_config=True):
                 extension_options.append(column.name)
         return extension_options
 
+    def get_addable_indexes(indexes):
+        """returns a list of single-attribute indexes that are not included in indexes"""
+        # setup database connection Connection
+        dbms_class = PostgresDatabaseConnector
+        generating_connector = dbms_class(None, autocommit=True)
+
+        # Attention: This might generate the benchmark tables
+        table_generator = TableGenerator(
+            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+        )
+
+        addable_indexes = []
+
+        for column in table_generator.columns:
+            if [column.name] not in indexes:
+                addable_indexes.append(column.name)
+        addable_indexes.sort()
+        return addable_indexes
+
+    @app.route('/extension_for_index/<index_attribute>')
+    def extension_for_index(index_attribute):
+        extension_options = get_index_extension_options([index_attribute])
+        print(extension_options)
+        return jsonify({'extension_options': extension_options})
+
     @app.route('/index_sizes/<approach_string>')
     def get_index_sizes(approach_string):
         print(approach_string)
@@ -180,8 +205,10 @@ def create_app(test_config=None, instance_relative_config=True):
             extension_options_per_index = []
             for index in index_names:
                 extension_options_per_index.append(get_index_extension_options(index))
-            print(index_names, index_sizes, extension_options_per_index)
-            return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index})
+            addable_indexes = get_addable_indexes(index_names)
+            print(index_names, index_sizes, extension_options_per_index, addable_indexes)
+
+            return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index, 'addable_indexes': addable_indexes})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':

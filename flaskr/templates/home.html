@@ -150,6 +150,7 @@
             '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
             '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" max-width="666" max-height="666"></canvas></div>\n' +
             '<div id="' + approach_id + '__index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
+            '<div id="' + approach_id + '__add_index"></div>\n' +
         '</div>\n'
                 $('#details_per_selection').append($(dom_element));
 
@@ -176,7 +177,7 @@
                 });
                 querySizeCharts.push(querySizeChart);
 
-                constructIndexOverview(approach_id, result.index_names, result.extension_options);
+                constructIndexOverview(approach_id, result.index_names, result.extension_options, result.addable_indexes);
             }
             else {
                 <!-- previously selected approach got deselected -->
@@ -241,21 +242,15 @@
 
 
     function remove(element) {
-        var parent = element.parentNode.parentNode;
         var removed_attribute = element.textContent;
+        console.log('remove index_attribute: ' + removed_attribute);
         let index_overview = element.parentNode.parentNode.parentNode;
         console.log(index_overview.id);
         console.assert(index_overview.id.split('__').slice(-1) == 'index_overview');
 
-        let index_information = parent.id.split('__')
-        console.assert(index_information.length == 3);
-
-        let algorithm = index_information[0];
-        let memory_budget = index_information[1];
-
-        let index_id = index_information[2];
-        console.log(index_id);
-        console.log(parent.id, element.textContent);
+        let algorithm = index_overview.id.split('__')[0];
+        let memory_budget = index_overview.id.split('__')[1];
+        let approach_id = algorithm + '__' + memory_budget;
 
         if (element.parentNode.children.length == 1) {
             // remove index
@@ -269,7 +264,7 @@
         }
 
         let index_names = [];
-        for (i=0; i<index_overview.children.length - 1; i++) {
+        for (i=0; i<index_overview.children.length; i++) {
             let index = [];
             for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
                 index.push(index_overview.children[i].children[0].children[j].textContent);
@@ -302,22 +297,16 @@
         console.log(index_overview.id);
         console.assert(index_overview.id.split('__').slice(-1) == 'index_overview');
 
-        let index_information = index_info_element.id.split('__')
-        console.assert(index_information.length == 3);
+        let algorithm = index_overview.id.split('__')[0];
+        let memory_budget = index_overview.id.split('__')[1];
 
-        let algorithm = index_information[0];
-        let memory_budget = index_information[1];
-
-        let index_id = index_information[2];
-        console.log(index_id);
-        console.log(index_info_element.id, element.textContent);
 
         index_info_element.children[0].innerHTML +=  '<button type="button" class="btn btn-default index-attribute" value="' + added_attribute + '" onclick="remove(this)">' + added_attribute + '<span class="glyphicon glyphicon-remove"></button>';
 
         element.remove();
 
         let index_names = [];
-        for (i=0; i<index_overview.children.length - 1; i++) {
+        for (i=0; i<index_overview.children.length; i++) {
             let index = [];
             for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
                 index.push(index_overview.children[i].children[0].children[j].textContent);
@@ -340,7 +329,68 @@
         queryCostsChart.update()
     }
 
-    function constructIndexOverview(approach_id, indexes, extension_options) {
+    function addIndex(element) {
+        console.log('add index');
+        let added_index = element.textContent;
+        console.log(added_index);
+        let add_index_element = element.parentNode.parentNode.parentNode;
+        console.log(add_index_element.id);
+        console.assert(add_index_element.id.split('__').slice(-1) == 'add_index');
+
+        let algorithm = add_index_element.id.split('__')[0];
+        let memory_budget = add_index_element.id.split('__')[1];
+
+        let approach_id = algorithm + '__' + memory_budget;
+
+        let result = getJson(apiUrl + 'extension_for_index/' + added_index);
+
+        let index_element = '<div><div class="btn-group btn-group-sm add_index_button" role="group">';
+        index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + added_index + '" onclick="remove(this)">' + added_index + '<span class="glyphicon glyphicon-remove"></button>';
+        index_element +='</div>';   // btn-group
+        index_element += '<div class="dropdown add_index_button">' +
+                                '<button class="btn btn-info dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
+                                    'add attribute' +
+                                '</button>' +
+                                '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">';
+
+            for (let k = 0; k < result.extension_options.length; k++) {
+                index_element += '<a class="dropdown-item" href="javascript: void(0);" onclick="addIndexAttribute(this)">' + result.extension_options[k] + '</a>';
+            }
+
+            index_element += '</div></div>';  // dropdown-menu + dropdown
+            index_element +='</div>';   // index element
+
+
+        let index_overview = document.getElementById(approach_id + '__index_overview');
+        index_overview.innerHTML += index_element;
+
+        element.remove();
+
+        let index_names = [];
+        for (i=0; i<index_overview.children.length; i++) {
+            let index = [];
+            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
+                index.push(index_overview.children[i].children[0].children[j].textContent);
+            }
+            index_names.push(index);
+        }
+        console.log(index_names);
+        result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
+        console.log(result.index_sizes);
+
+        let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
+        querySizeCharts[position].data.datasets[0].data = result.index_sizes;
+        querySizeCharts[position].data.labels = index_names;
+        querySizeCharts[position].update();
+
+        // use individual updates for smooth animation
+        for (i = 0; i < result.query_costs.length; i++) {
+            queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
+        }
+        queryCostsChart.update()
+    }
+
+    function constructIndexOverview(approach_id, indexes, extension_options, addable_indexes) {
         let index_overview_element = document.getElementById(approach_id + '__index_overview');
         index_overview_element.innerHTML = '';
         for (var i = 0; i < indexes.length; i++) {
@@ -364,16 +414,18 @@
             index_element +='</div>';   // index element
             index_overview_element.innerHTML += index_element;
         }
-        index_overview_element.innerHTML += '<div class="dropdown">' +
+        let drop_down = '<div class="dropdown">' +
                                 '<button class="btn btn-info dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">' +
                                     'add index' +
                                 '</button>' +
-                                '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">' +
-                                    '<a class="dropdown-item" href="#">Action</a>' +
-                                    '<a class="dropdown-item" href="#">Another action</a>' +
-                                    '<a class="dropdown-item" href="#">Something else here</a>' +
-                                  '</div>' +
-                                '</div>';
+                                '<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">';
+
+        for (let i = 0; i < addable_indexes.length; i++) {
+            drop_down += '<a class="dropdown-item" href="javascript: void(0);" onclick="addIndex(this)">' + addable_indexes[i] + '</a>';
+        }
+
+        drop_down += '</div></div>';  // dropdown-menu + dropdown
+        document.getElementById(approach_id + '__add_index').innerHTML += drop_down;
 
     }
 
