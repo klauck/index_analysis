@@ -135,7 +135,7 @@
                 selectedAlgorithms.push([algorithm, memory_budget]);
                 console.log('select: ' + [algorithm, memory_budget]);
                 $('#cost_div').removeClass('d-none');
-                var result = getJson(apiUrl + 'query_cost_per_algorithm/' + JSON.stringify([[algorithm, memory_budget]]));
+                var result = getJson(apiUrl + 'query_cost_per_algorithm/' + benchmark + '/' + JSON.stringify([[algorithm, memory_budget]]));
                 for (i = 0; i < result.length; i++) {
                     queryCostsChart.data.datasets.push(result[i]);
                 }
@@ -373,7 +373,7 @@
             index_names.push(index);
         }
         console.log(index_names);
-        let result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
+        let result = getJson(apiUrl + 'index_calculation/' + benchmark + '/' + JSON.stringify(index_names));
         console.log(result.index_sizes);
 
         let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
@@ -453,7 +453,7 @@
 
         let approach_id = algorithm + '__' + memory_budget;
 
-        let result = getJson(apiUrl + 'extension_for_index/' + added_index);
+        let result = getJson(apiUrl + 'extension_for_index/' + benchmark + '/' + added_index);
 
         let index_element = '<div><div class="btn-group btn-group-sm add_index_button" role="group">';
         index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + added_index + '" onclick="remove(this)">' + added_index + '<span class="glyphicon glyphicon-remove"></button>';

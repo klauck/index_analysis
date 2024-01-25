@@ -105,11 +105,8 @@ def create_app(test_config=None, instance_relative_config=True):
 
         return jsonify({'query_cost_no_index': query_cost_no_index, 'queries': queries})
 
-    @app.route('/index_calculation/<index_names_string>')
-    def index_calculation(index_names_string):
-        print(index_names_string, len(index_names_string))
-        data = json.loads(index_names_string)
-        print(data, len(data))
+    @app.route('/index_calculation/<benchmark>/<index_names_string>')
+    def index_calculation(benchmark, index_names_string):
 
         # setup database connection Connection
         dbms_class = PostgresDatabaseConnector
@@ -117,13 +114,13 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+            benchmark, CONFIG["scale_factor"], generating_connector
         )
         database_name = table_generator.database_name()
         db_connector = PostgresDatabaseConnector(database_name)
 
         query_generator = QueryGenerator(
-            CONFIG["benchmark_name"],
+            benchmark,
             CONFIG["scale_factor"],
             db_connector,
             CONFIG["queries"],
@@ -135,7 +132,6 @@ def create_app(test_config=None, instance_relative_config=True):
             columns_per_name[column.name] = column
 
         workload = Workload(query_generator.queries)
-        print(workload)
 
         indexes = []
         for index_string_list in json.loads(index_names_string):
@@ -154,7 +150,7 @@ def create_app(test_config=None, instance_relative_config=True):
                 if index not in queries_per_index:
                     queries_per_index[index] = []
                 queries_per_index[index].append(query.nr)
-            print(query, costs, cost, recommended_indexes)
+            # print(query, costs, cost, recommended_indexes)
             query_costs.append(costs)
 
         index_sizes = []
@@ -171,7 +167,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         return jsonify({'index_sizes': index_sizes, 'query_costs': query_costs, 'queries_per_index': index_queries})
 
-    def get_index_extension_options(index):
+    def get_index_extension_options(benchmark, index):
         """returns a list of attributes to extend an index"""
         # setup database connection Connection
         dbms_class = PostgresDatabaseConnector
@@ -179,7 +175,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+            benchmark, CONFIG["scale_factor"], generating_connector
         )
 
         columns_per_name = {}
@@ -212,9 +208,9 @@ def create_app(test_config=None, instance_relative_config=True):
         addable_indexes.sort()
         return addable_indexes
 
-    @app.route('/extension_for_index/<index_attribute>')
-    def extension_for_index(index_attribute):
-        extension_options = get_index_extension_options([index_attribute])
+    @app.route('/extension_for_index/<benchmark>/<index_attribute>')
+    def extension_for_index(benchmark, index_attribute):
+        extension_options = get_index_extension_options(benchmark, [index_attribute])
         print(extension_options)
         return jsonify({'extension_options': extension_options})
 
@@ -225,7 +221,7 @@ def create_app(test_config=None, instance_relative_config=True):
         index_names, index_sizes = get_indexes_per_algorithm_and_budget(benchmark, algorithm, storage_budget)
         extension_options_per_index = []
         for index in index_names:
-            extension_options_per_index.append(get_index_extension_options(index))
+            extension_options_per_index.append(get_index_extension_options(benchmark, index))
         addable_indexes = get_addable_indexes(index_names)
         print(index_names, index_sizes, extension_options_per_index, addable_indexes)
 
@@ -351,12 +347,12 @@ def create_app(test_config=None, instance_relative_config=True):
         for i, index in enumerate(indexes):
             indexes[i] = [column.split('.')[1] for column in index]
 
-        index_sizes = estimate_index_sizes(indexes)
+        index_sizes = estimate_index_sizes(benchmark, indexes)
         return indexes, index_sizes
 
-    def get_query_cost_per_algorithm_and_budget(algorithm, budget):
+    def get_query_cost_per_algorithm_and_budget(benchmark, algorithm, budget):
         result = parse_file(os.path.dirname(os.path.abspath(
-            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
         query_cost = None
         for line in result:
             if line[0] / 1000 == budget:
@@ -368,18 +364,15 @@ def create_app(test_config=None, instance_relative_config=True):
         i = ALGORITHMS.index(algorithm)
         return TABLEAU_COLORS[i]
 
-    @app.route('/query_cost_per_algorithm/<algorithm_list_string>')
-    def query_cost_per_algorithm(algorithm_list_string):
-        print(algorithm_list_string)
+    @app.route('/query_cost_per_algorithm/<benchmark>/<algorithm_list_string>')
+    def query_cost_per_algorithm(benchmark, algorithm_list_string):
         algorithms = json.loads(algorithm_list_string)
-        print(algorithms)
         costs_per_algorithm = []
-        # 'no_index': get_query_cost_per_algorithm_and_budget('no_index', 0)
         for algorithm in algorithms:
             color = get_color(algorithm[0])
             costs_per_algorithm.append({
                 'label': f'{algorithm[0]} {algorithm[1]}',
-                'data': get_query_cost_per_algorithm_and_budget(algorithm[0], algorithm[1]),
+                'data': get_query_cost_per_algorithm_and_budget(benchmark, algorithm[0], algorithm[1]),
                 'borderColor': f'rgba({color[0]}, {color[1]}, {color[2]}, 1)',
                 'backgroundColor': f'rgba({color[0]}, {color[1]}, {color[2]}, {algorithm[1] / 15})',
                 'borderWidth': 1
@@ -388,7 +381,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         return jsonify(costs_per_algorithm)
 
-    def estimate_index_sizes(index_string_list):
+    def estimate_index_sizes(benchmark, index_string_list):
         # TODO: put first part in separate function
         # setup database connection Connection
         dbms_class = PostgresDatabaseConnector
@@ -396,7 +389,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+            benchmark, CONFIG["scale_factor"], generating_connector
         )
         database_name = table_generator.database_name()
         db_connector = PostgresDatabaseConnector(database_name)
