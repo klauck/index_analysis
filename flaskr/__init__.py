@@ -21,6 +21,8 @@ CONFIG = {
 }
 logging.basicConfig(level=logging.DEBUG)
 
+NUMBER_OF_QUERIES = 19
+
 ALGORITHMS = [
     'anytime',
     'auto_admin',
@@ -85,6 +87,23 @@ def create_app(test_config=None, instance_relative_config=True):
     @app.route("/home")
     def home():
         return render_template("home.html")
+
+    @app.route('/query_cost_no_indexes/<benchmark>')
+    def query_cost_no_indexes(benchmark):
+        no_index_result = parse_file(os.path.dirname(os.path.abspath(
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
+        query_cost_no_index = no_index_result[0][2]
+        queries = CONFIG['queries']
+
+        # index_names, index_sizes, query_cost_information, query_cost_no_index = retrieve_index_sizes(benchmark)
+        # print(index_names, index_sizes)
+        # index_sizes = [size/10**9 for size in index_sizes]
+        # queries = [query_number for query_number, _, _ in query_cost_information]
+        # query_costs = [query_cost for _, _, query_cost in query_cost_information]
+        # print(query_cost_no_index, type(query_cost_no_index))
+        # print(query_costs, type(query_costs))
+
+        return jsonify({'query_cost_no_index': query_cost_no_index, 'queries': queries})
 
     @app.route('/index_calculation/<index_names_string>')
     def index_calculation(index_names_string):
@@ -199,29 +218,18 @@ def create_app(test_config=None, instance_relative_config=True):
         print(extension_options)
         return jsonify({'extension_options': extension_options})
 
-    @app.route('/index_sizes/<approach_string>')
-    def get_index_sizes(approach_string):
-        print(approach_string)
+    @app.route('/index_sizes/<benchmark>/<approach_string>')
+    def get_index_sizes(benchmark, approach_string):
         algorithm, storage_budget = json.loads(approach_string)
 
-        if algorithm == "ILP" and storage_budget == 4000:
-            index_names, index_sizes, query_cost_information, query_cost_no_index = retrieve_index_sizes()
-            print(index_names, index_sizes)
-            index_sizes = [size/10**9 for size in index_sizes]
-            queries = [query_number for query_number, _, _ in query_cost_information]
-            query_costs = [query_cost for _, _, query_cost in query_cost_information]
-            print(query_cost_no_index, type(query_cost_no_index))
-            print(query_costs, type(query_costs))
-            return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'query_cost_no_index': query_cost_no_index, 'queries': queries, 'query_costs': query_costs, })
-        else:
-            index_names, index_sizes = get_indexes_per_algorithm_and_budget(algorithm, storage_budget)
-            extension_options_per_index = []
-            for index in index_names:
-                extension_options_per_index.append(get_index_extension_options(index))
-            addable_indexes = get_addable_indexes(index_names)
-            print(index_names, index_sizes, extension_options_per_index, addable_indexes)
+        index_names, index_sizes = get_indexes_per_algorithm_and_budget(benchmark, algorithm, storage_budget)
+        extension_options_per_index = []
+        for index in index_names:
+            extension_options_per_index.append(get_index_extension_options(index))
+        addable_indexes = get_addable_indexes(index_names)
+        print(index_names, index_sizes, extension_options_per_index, addable_indexes)
 
-            return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index, 'addable_indexes': addable_indexes})
+        return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index, 'addable_indexes': addable_indexes})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
@@ -302,15 +310,14 @@ def create_app(test_config=None, instance_relative_config=True):
 
         return index_names, index_sizes_l, query_cost_information, query_cost_no_index
 
-    @app.route('/summary')
-    def summary():
-        no_index_result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_tpch_19_queries.csv')
-        print(no_index_result)
+    @app.route('/summary/<benchmark>')
+    def summary(benchmark):
+        no_index_result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
         no_index_costs = sum(no_index_result[0][2])
 
         datasets = []
         for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'relaxation']):
-            result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
+            result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
 
             data = []
             for line in result:
@@ -325,17 +332,19 @@ def create_app(test_config=None, instance_relative_config=True):
                 'radius': 7
             }
             datasets.append(algorithm_result)
-        print(datasets)
         return jsonify(datasets)
 
-    def get_indexes_per_algorithm_and_budget(algorithm, budget):
+    def get_indexes_per_algorithm_and_budget(benchmark, algorithm, budget):
+        if benchmark == 'tpch':
+            number_of_queries = 19
+        elif benchmark == 'tpcds':
+            number_of_queries = 90
         result = parse_file(os.path.dirname(os.path.abspath(
-            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_tpch_19_queries.csv')
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
         indexes = None
         for line in result:
             if line[0] / 1000 == budget:
                 indexes = line[3]
-        print(indexes)
         assert indexes is not None
 
         # remove table name
@@ -407,7 +416,6 @@ def create_app(test_config=None, instance_relative_config=True):
         index_sizes = []
         for index in indexes:
             cost_evaluation.estimate_size(index)
-            print(index, index.estimated_size)
             index_sizes.append(index.estimated_size / 10 ** 9)
 
         return index_sizes

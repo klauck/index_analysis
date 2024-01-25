@@ -108,6 +108,8 @@
     <script>
     let apiUrl = 'http://127.0.0.1:5000/';
 
+    var benchmark = 'tpch';
+
     function getJson(url) {
         let request = new XMLHttpRequest();
         request.open("GET", url, false);
@@ -118,7 +120,7 @@
     var selectedAlgorithms = [];
     var querySizeCharts = []
 
-    var summaryData = getJson(apiUrl + 'summary');
+    var summaryData = getJson(apiUrl + 'summary/' + benchmark);
     console.log(summaryData);
 
     function summaryOnClickHandler(event, elements, chart) {
@@ -142,7 +144,7 @@
                 console.log(borderColor, backgroundColor);
                 $('#cost_div').removeClass('d-none');
                 <!-- TODO: add approach details -->
-                var result = getJson(apiUrl + 'index_sizes/' + JSON.stringify([algorithm, memory_budget]));
+                var result = getJson(apiUrl + 'index_sizes/' + benchmark + '/' + JSON.stringify([algorithm, memory_budget]));
                 var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
             '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
             '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" width="480" height="350"></canvas></div>\n' +
@@ -294,7 +296,7 @@
         }
     });
 
-    var data = getJson(apiUrl + 'index_sizes/' + JSON.stringify(["ILP", 4000]));
+    var data = getJson(apiUrl + 'query_cost_no_indexes/' + benchmark);
 
     var ctx = document.getElementById('queryCostsChart').getContext('2d');
     queryCostsChart = new Chart(ctx, {
