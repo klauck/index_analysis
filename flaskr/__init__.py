@@ -127,17 +127,30 @@ def create_app(test_config=None, instance_relative_config=True):
 
         cost_evaluation = CostEvaluation(db_connector)
         query_costs = []
+        queries_per_index = {}
         for query in workload.queries:
             costs = cost_evaluation.calculate_cost(Workload([query]), indexes)
+            recommended_indexes, cost = cost_evaluation.which_indexes_utilized_and_cost(query, indexes)
+            for index in recommended_indexes:
+                if index not in queries_per_index:
+                    queries_per_index[index] = []
+                queries_per_index[index].append(query.nr)
+            print(query, costs, cost, recommended_indexes)
             query_costs.append(costs)
 
         index_sizes = []
+        index_queries = []
         for index in indexes:
             cost_evaluation.estimate_size(index)
             print(index, index.estimated_size)
             index_sizes.append(index.estimated_size / 10**9)
+            if index in queries_per_index:
+                index_queries.append(queries_per_index[index])
+            else:
+                index_queries.append([])
+        print(index_queries)
 
-        return jsonify({'index_sizes': index_sizes, 'query_costs': query_costs})
+        return jsonify({'index_sizes': index_sizes, 'query_costs': query_costs, 'queries_per_index': index_queries})
 
     def get_index_extension_options(index):
         """returns a list of attributes to extend an index"""

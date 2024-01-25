@@ -67,6 +67,10 @@
     display: inline-block;
 }
 
+.queries_per_index {
+    display: inline-block;
+}
+
     </style>
 </head>
 
@@ -354,6 +358,40 @@
         }
     });
 
+    function updateDetails(index_overview) {
+        let algorithm = index_overview.id.split('__')[0];
+        let memory_budget = index_overview.id.split('__')[1];
+
+        let index_names = [];
+        for (i=0; i<index_overview.children.length; i++) {
+            let index = [];
+            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
+                index.push(index_overview.children[i].children[0].children[j].textContent);
+            }
+            index_names.push(index);
+        }
+        console.log(index_names);
+        let result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
+        console.log(result.index_sizes);
+
+        let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
+        querySizeCharts[position].data.datasets[0].data = result.index_sizes;
+        querySizeCharts[position].data.labels = index_names;
+        querySizeCharts[position].update();
+
+        // use individual updates for smooth animation
+        for (i = 0; i < result.query_costs.length; i++) {
+            queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
+        }
+        queryCostsChart.update()
+
+
+        console.assert(index_overview.children.length == result.queries_per_index.length)
+        for (let i = 0; i < result.queries_per_index.length; i++) {
+            index_overview.children[i].children[2].innerHTML = result.queries_per_index[i];
+        }
+    }
+
 
     function remove(element) {
         var removed_attribute = element.textContent;
@@ -377,29 +415,7 @@
             element.remove();
         }
 
-        let index_names = [];
-        for (i=0; i<index_overview.children.length; i++) {
-            let index = [];
-            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
-                index.push(index_overview.children[i].children[0].children[j].textContent);
-            }
-            index_names.push(index);
-        }
-        console.log(index_names);
-        let result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
-        console.log(result.index_sizes);
-
-        let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
-        querySizeCharts[position].data.datasets[0].data = result.index_sizes;
-        querySizeCharts[position].data.labels = index_names;
-        querySizeCharts[position].update();
-
-        // use individual updates for smooth animation
-        for (i = 0; i < result.query_costs.length; i++) {
-            queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
-        }
-        queryCostsChart.update()
-
+        updateDetails(index_overview);
     }
 
     function addIndexAttribute(element) {
@@ -419,28 +435,7 @@
 
         element.remove();
 
-        let index_names = [];
-        for (i=0; i<index_overview.children.length; i++) {
-            let index = [];
-            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
-                index.push(index_overview.children[i].children[0].children[j].textContent);
-            }
-            index_names.push(index);
-        }
-        console.log(index_names);
-        let result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
-        console.log(result.index_sizes);
-
-        let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
-        querySizeCharts[position].data.datasets[0].data = result.index_sizes;
-        querySizeCharts[position].data.labels = index_names;
-        querySizeCharts[position].update();
-
-        // use individual updates for smooth animation
-        for (i = 0; i < result.query_costs.length; i++) {
-            queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
-        }
-        queryCostsChart.update()
+        updateDetails(index_overview);
     }
 
     function addIndex(element) {
@@ -472,6 +467,7 @@
             }
 
             index_element += '</div></div>';  // dropdown-menu + dropdown
+            index_element += '<div class="queries_per_index"></div>';
             index_element +='</div>';   // index element
 
 
@@ -480,28 +476,7 @@
 
         element.remove();
 
-        let index_names = [];
-        for (i=0; i<index_overview.children.length; i++) {
-            let index = [];
-            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
-                index.push(index_overview.children[i].children[0].children[j].textContent);
-            }
-            index_names.push(index);
-        }
-        console.log(index_names);
-        result = getJson(apiUrl + 'index_calculation/' + JSON.stringify(index_names));
-        console.log(result.index_sizes);
-
-        let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
-        querySizeCharts[position].data.datasets[0].data = result.index_sizes;
-        querySizeCharts[position].data.labels = index_names;
-        querySizeCharts[position].update();
-
-        // use individual updates for smooth animation
-        for (i = 0; i < result.query_costs.length; i++) {
-            queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
-        }
-        queryCostsChart.update()
+        updateDetails(index_overview);
     }
 
     function constructIndexOverview(approach_id, indexes, extension_options, addable_indexes) {
@@ -525,6 +500,7 @@
             }
 
             index_element += '</div></div>';  // dropdown-menu + dropdown
+            index_element += '<div class="queries_per_index"></div>';
             index_element +='</div>';   // index element
             index_overview_element.innerHTML += index_element;
         }
@@ -540,6 +516,8 @@
 
         drop_down += '</div></div>';  // dropdown-menu + dropdown
         document.getElementById(approach_id + '__add_index').innerHTML += drop_down;
+
+        updateDetails(index_overview_element);
 
     }
 
