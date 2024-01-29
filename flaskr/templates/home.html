@@ -144,9 +144,10 @@
                 console.log(borderColor, backgroundColor);
                 $('#cost_div').removeClass('d-none');
                 <!-- TODO: add approach details -->
-                var result = getJson(apiUrl + 'index_sizes/' + benchmark + '/' + JSON.stringify([algorithm, memory_budget]));
+                var result = getJson(apiUrl + 'get_approach_details/' + benchmark + '/' + JSON.stringify([algorithm, memory_budget]));
                 var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
             '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
+            '<div> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + '<span title="' + JSON.stringify(result.run_parameters) + '"> ... }<span/></div>\n' +
             '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" width="480" height="350"></canvas></div>\n' +
             '<div id="' + approach_id + '__index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
             '<div id="' + approach_id + '__add_index"></div>\n' +

@@ -214,8 +214,8 @@ def create_app(test_config=None, instance_relative_config=True):
         print(extension_options)
         return jsonify({'extension_options': extension_options})
 
-    @app.route('/index_sizes/<benchmark>/<approach_string>')
-    def get_index_sizes(benchmark, approach_string):
+    @app.route('/get_approach_details/<benchmark>/<approach_string>')
+    def get_approach_details(benchmark, approach_string):
         algorithm, storage_budget = json.loads(approach_string)
 
         index_names, index_sizes = get_indexes_per_algorithm_and_budget(benchmark, algorithm, storage_budget)
@@ -223,9 +223,13 @@ def create_app(test_config=None, instance_relative_config=True):
         for index in index_names:
             extension_options_per_index.append(get_index_extension_options(benchmark, index))
         addable_indexes = get_addable_indexes(index_names)
-        print(index_names, index_sizes, extension_options_per_index, addable_indexes)
 
-        return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index, 'addable_indexes': addable_indexes})
+        details = get_parsed_details(benchmark, algorithm, storage_budget)
+        parameters = details['parameters']
+        print(parameters)
+
+        print(index_names, index_sizes, extension_options_per_index, addable_indexes, parameters)
+        return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index, 'addable_indexes': addable_indexes, 'run_parameters': parameters})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
@@ -349,6 +353,23 @@ def create_app(test_config=None, instance_relative_config=True):
 
         index_sizes = estimate_index_sizes(benchmark, indexes)
         return indexes, index_sizes
+
+    def get_parsed_details(benchmark, algorithm, budget):
+        if benchmark == 'tpch':
+            number_of_queries = 19
+        elif benchmark == 'tpcds':
+            number_of_queries = 90
+        result = parse_file(os.path.dirname(os.path.abspath(
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
+
+        parameters = None
+        for line in result:
+            if line[0] / 1000 == budget:
+                parameters = line[4]
+        assert parameters is not None
+
+        details = {'parameters': parameters}
+        return details
 
     def get_query_cost_per_algorithm_and_budget(benchmark, algorithm, budget):
         result = parse_file(os.path.dirname(os.path.abspath(
