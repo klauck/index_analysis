@@ -71,6 +71,25 @@
     display: inline-block;
 }
 
+.approach_info {
+    padding: 10px 0px 0px 0px;
+    width: 50%;
+    display: inline-block;
+    font-size: 23px;
+    text-align: center;
+}
+
+.approach_label {
+    width: 50%;
+    display: inline-block;
+    font-size: 15px;
+    text-align: center;
+}
+
+.parameters {
+    text-align: center;
+}
+
     </style>
 </head>
 
@@ -136,19 +155,28 @@
                 console.log('select: ' + [algorithm, memory_budget]);
                 $('#cost_div').removeClass('d-none');
                 var result = getJson(apiUrl + 'query_cost_per_algorithm/' + benchmark + '/' + JSON.stringify([[algorithm, memory_budget]]));
+                let overall_cost = 0;
                 for (i = 0; i < result.length; i++) {
                     queryCostsChart.data.datasets.push(result[i]);
+                    for (let jj = 0; jj < result[i].data.length; jj++) {
+                        overall_cost += result[i].data[jj];
+                    }
                 }
                 let borderColor = result[0].borderColor;
                 let backgroundColor = result[0].backgroundColor;
                 console.log(borderColor, backgroundColor);
+                console.log(overall_cost, cost_no_indexes)
                 $('#cost_div').removeClass('d-none');
                 <!-- TODO: add approach details -->
                 var result = getJson(apiUrl + 'get_approach_details/' + benchmark + '/' + JSON.stringify([algorithm, memory_budget]));
                 var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
-            '<h3>' + algorithm + ' ' +  memory_budget + ' GB</h3>\n' +
-            '<div> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + '<span title="' + JSON.stringify(result.run_parameters) + '"> ... }<span/></div>\n' +
+            '<h3>' + algorithm + '</h3>\n' +
+            '<div class="parameters"> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + '<span title="' + JSON.stringify(result.run_parameters) + '"> ... }<span/></div>\n' +
+            '<div><span id="' + approach_id + '__relative_cost' + '" class="approach_info">' + (overall_cost / cost_no_indexes * 100).toFixed(1) + ' %</span><span id="' + approach_id + '__storage_consumption' + '" class="approach_info">' + result.storage_consumption.toFixed(2) + ' GB</span></div>\n' +
+            '<div><span class="approach_label">Workload Cost</span><span class="approach_label">Storage Consumption</span></div>\n' +
+            '<hr class="hr" />\n' +
             '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" width="480" height="350"></canvas></div>\n' +
+            '<hr class="hr" />\n' +
             '<div id="' + approach_id + '__index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
             '<div id="' + approach_id + '__add_index"></div>\n' +
         '</div>\n'
@@ -298,6 +326,10 @@
     });
 
     var data = getJson(apiUrl + 'query_cost_no_indexes/' + benchmark);
+    var cost_no_indexes = 0;
+    for (let i = 0; i < data.query_cost_no_index.length; i++) {
+        cost_no_indexes += data.query_cost_no_index[i];
+    }
 
     var ctx = document.getElementById('queryCostsChart').getContext('2d');
     queryCostsChart = new Chart(ctx, {
@@ -377,15 +409,24 @@
         let result = getJson(apiUrl + 'index_calculation/' + benchmark + '/' + JSON.stringify(index_names));
         console.log(result.index_sizes);
 
+        let storage_consumption = 0;
+        for (let i = 0; i < result.index_sizes.length; i++) {
+            storage_consumption += result.index_sizes[i];
+        }
+        document.getElementById(algorithm + '__' + memory_budget + '__storage_consumption').innerHTML = storage_consumption.toFixed(2) + ' GB';
+
         let position = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
         querySizeCharts[position].data.datasets[0].data = result.index_sizes;
         querySizeCharts[position].data.labels = index_names;
         querySizeCharts[position].update();
 
         // use individual updates for smooth animation
+        let overall_cost = 0;
         for (i = 0; i < result.query_costs.length; i++) {
             queryCostsChart.data.datasets[position+1].data[i] = result.query_costs[i];
+            overall_cost += result.query_costs[i]
         }
+        document.getElementById(algorithm + '__' + memory_budget + '__relative_cost').innerHTML = (overall_cost / cost_no_indexes * 100).toFixed(1) + ' %';
         queryCostsChart.update()
 
 

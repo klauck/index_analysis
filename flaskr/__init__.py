@@ -229,7 +229,9 @@ def create_app(test_config=None, instance_relative_config=True):
         print(parameters)
 
         print(index_names, index_sizes, extension_options_per_index, addable_indexes, parameters)
-        return jsonify({'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index, 'addable_indexes': addable_indexes, 'run_parameters': parameters})
+        return jsonify(
+            {'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index,
+             'addable_indexes': addable_indexes, 'run_parameters': parameters, 'storage_consumption': sum(index_sizes)})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
@@ -392,7 +394,7 @@ def create_app(test_config=None, instance_relative_config=True):
         for algorithm in algorithms:
             color = get_color(algorithm[0])
             costs_per_algorithm.append({
-                'label': f'{algorithm[0]} {algorithm[1]}',
+                'label': f'{algorithm[0]}',  # {algorithm[1]}',
                 'data': get_query_cost_per_algorithm_and_budget(benchmark, algorithm[0], algorithm[1]),
                 'borderColor': f'rgba({color[0]}, {color[1]}, {color[2]}, 1)',
                 'backgroundColor': f'rgba({color[0]}, {color[1]}, {color[2]}, {algorithm[1] / 15})',
