@@ -226,12 +226,14 @@ def create_app(test_config=None, instance_relative_config=True):
 
         details = get_parsed_details(benchmark, algorithm, storage_budget)
         parameters = details['parameters']
+        run_time = details['run_time']
         print(parameters)
 
         print(index_names, index_sizes, extension_options_per_index, addable_indexes, parameters)
         return jsonify(
             {'index_names': index_names, 'index_sizes': index_sizes, 'extension_options': extension_options_per_index,
-             'addable_indexes': addable_indexes, 'run_parameters': parameters, 'storage_consumption': sum(index_sizes)})
+             'addable_indexes': addable_indexes, 'run_parameters': parameters, 'storage_consumption': sum(index_sizes),
+             'run_time': run_time})
 
     def retrieve_index_sizes(benchmark='tpch', algorithm='cophy', index_width=2, indexes_per_query=1, storage_budget=5*10**9):
         if algorithm == 'cophy':
@@ -368,9 +370,10 @@ def create_app(test_config=None, instance_relative_config=True):
         for line in result:
             if line[0] / 1000 == budget:
                 parameters = line[4]
+                run_time = line[5]
         assert parameters is not None
 
-        details = {'parameters': parameters}
+        details = {'parameters': parameters, 'run_time': run_time}
         return details
 
     def get_query_cost_per_algorithm_and_budget(benchmark, algorithm, budget):

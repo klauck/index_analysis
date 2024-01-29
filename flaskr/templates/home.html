@@ -73,14 +73,14 @@
 
 .approach_info {
     padding: 10px 0px 0px 0px;
-    width: 50%;
+    width: 33.3%;
     display: inline-block;
     font-size: 23px;
     text-align: center;
 }
 
 .approach_label {
-    width: 50%;
+    width: 33.3%;
     display: inline-block;
     font-size: 15px;
     text-align: center;
@@ -177,8 +177,11 @@
             '<button type="button" class="close approach_close" aria-label="Close" onclick="removeDetail(&quot;' + algorithm + '&quot;, &quot;' + memory_budget + '&quot;)"><span aria-hidden="true">&times;</span></button>' +
             '<h3>' + algorithm + '</h3>\n' +
             '<div class="parameters"> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + "<span title='" + JSON.stringify(result.run_parameters, null, 2) + "'> ... }<span/></div>\n" +
-            '<div><span id="' + approach_id + '__relative_cost' + '" class="approach_info">' + (overall_cost / cost_no_indexes * 100).toFixed(1) + ' %</span><span id="' + approach_id + '__storage_consumption' + '" class="approach_info">' + result.storage_consumption.toFixed(2) + ' GB</span></div>\n' +
-            '<div><span class="approach_label">Workload Cost</span><span class="approach_label">Storage Consumption</span></div>\n' +
+            '<div><span id="' + approach_id + '__relative_cost' + '" class="approach_info">' + (overall_cost / cost_no_indexes * 100).toFixed(1) + ' %</span>' +
+            '<span id="' + approach_id + '__storage_consumption' + '" class="approach_info">' + result.storage_consumption.toFixed(2) + ' GB</span>' +
+            '<span class="approach_info">' + result.run_time.toFixed(2) + ' s</span>' +
+            '</div>\n' +
+            '<div><span class="approach_label">Workload Cost</span><span class="approach_label">Storage Consumption</span><span class="approach_label">Algorithm Run Time</span></div>\n' +
             '<hr class="hr" />\n' +
             '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" width="480" height="350"></canvas></div>\n' +
             '<hr class="hr" />\n' +
