@@ -86,6 +86,10 @@
     text-align: center;
 }
 
+.approach_close {
+    float: right;
+}
+
 .parameters {
     text-align: center;
 }
@@ -170,6 +174,7 @@
                 <!-- TODO: add approach details -->
                 var result = getJson(apiUrl + 'get_approach_details/' + benchmark + '/' + JSON.stringify([algorithm, memory_budget]));
                 var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
+            '<button type="button" class="close approach_close" aria-label="Close" onclick="removeDetail(&quot;' + algorithm + '&quot;, &quot;' + memory_budget + '&quot;)"><span aria-hidden="true">&times;</span></button>' +
             '<h3>' + algorithm + '</h3>\n' +
             '<div class="parameters"> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + '<span title="' + JSON.stringify(result.run_parameters) + '"> ... }<span/></div>\n' +
             '<div><span id="' + approach_id + '__relative_cost' + '" class="approach_info">' + (overall_cost / cost_no_indexes * 100).toFixed(1) + ' %</span><span id="' + approach_id + '__storage_consumption' + '" class="approach_info">' + result.storage_consumption.toFixed(2) + ' GB</span></div>\n' +
@@ -246,23 +251,30 @@
                 constructIndexOverview(approach_id, result.index_names, result.extension_options, result.addable_indexes);
             }
             else {
-                <!-- previously selected approach got deselected -->
-                console.log('deselect: ' + approach_id);
-                selectedAlgorithms.splice(index, 1);
-                querySizeCharts.splice(index, 1);
-                let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
-                console.log('chart costs remove ' + index2);
-                queryCostsChart.data.datasets.splice(index2, 1);
-<!--                if (selectedAlgorithms.length == 0) {-->
-<!--                    $('#cost_div').addClass('d-none');-->
-<!--                }-->
-                <!-- remove approach details -->
-                console.log('#' + approach_id + '__details remove');
-                $(document.getElementById(approach_id + '__details')).remove();
+                removeDetail(algorithm, memory_budget);
             }
             console.log(selectedAlgorithms);
             queryCostsChart.update();
         }
+    }
+
+    function removeDetail(algorithm, memory_budget) {
+        <!-- previously selected approach got deselected -->
+        let approach_id = algorithm + '__' + memory_budget;
+        let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
+        console.log('deselect: ' + approach_id);
+        selectedAlgorithms.splice(index, 1);
+        querySizeCharts.splice(index, 1);
+        let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
+        console.log('chart costs remove ' + index2);
+        queryCostsChart.data.datasets.splice(index2, 1);
+<!--                if (selectedAlgorithms.length == 0) {-->
+<!--                    $('#cost_div').addClass('d-none');-->
+<!--                }-->
+        <!-- remove approach details -->
+        console.log('#' + approach_id + '__details remove');
+        $(document.getElementById(approach_id + '__details')).remove();
+
     }
 
     var ctx = document.getElementById('summaryChart').getContext('2d');
@@ -459,6 +471,7 @@
             element.remove();
         }
 
+        index_overview.parentNode.children[1].innerHTML = algorithm + ' <span class="badge badge-info">adapted</span>';
         updateDetails(index_overview);
     }
 
@@ -478,6 +491,8 @@
         index_info_element.children[0].innerHTML +=  '<button type="button" class="btn btn-default index-attribute" value="' + added_attribute + '" onclick="remove(this)">' + added_attribute + '<span class="glyphicon glyphicon-remove"></button>';
 
         element.remove();
+
+        index_overview.parentNode.children[1].innerHTML = algorithm + ' <span class="badge badge-info">adapted</span>';
 
         updateDetails(index_overview);
     }
@@ -517,6 +532,8 @@
 
         let index_overview = document.getElementById(approach_id + '__index_overview');
         index_overview.innerHTML += index_element;
+
+        index_overview.parentNode.children[1].innerHTML = algorithm + ' <span class="badge badge-info">adapted</span>';
 
         element.remove();
 
