@@ -68,7 +68,9 @@
 }
 
 .queries_per_index {
+    width: 20%;
     display: inline-block;
+    text-align: center;
 }
 
 .approach_info {
@@ -88,6 +90,27 @@
 
 .approach_close {
     float: right;
+}
+
+.index_attributes_header {
+    width: 80%;
+    display: inline-block;
+    font-weight: bold;
+    text-align: center;
+    color: #666;
+}
+
+.queries_per_index_header {
+    width: 20%;
+    display: inline-block;
+    font-weight: bold;
+    text-align: center;
+    color: #666;
+}
+
+.index_attributes {
+    width: 80%;
+    display: inline-block;
 }
 
 .parameters {
@@ -185,6 +208,7 @@
             '<hr class="hr" />\n' +
             '<div id="' + approach_id + 'size_div"><canvas id="' + approach_id + '__indexSizeChart" width="480" height="350"></canvas></div>\n' +
             '<hr class="hr" />\n' +
+            '<div><span class="index_attributes_header">Attributes per Index</span><span class="queries_per_index_header">Queries</span></div>\n' +
             '<div id="' + approach_id + '__index_overview">' + JSON.stringify(result.index_names) + '</div>\n' +
             '<div id="' + approach_id + '__add_index"></div>\n' +
         '</div>\n'
@@ -415,8 +439,8 @@
         let index_names = [];
         for (i=0; i<index_overview.children.length; i++) {
             let index = [];
-            for (j=0; j<index_overview.children[i].children[0].children.length; j++) {
-                index.push(index_overview.children[i].children[0].children[j].textContent);
+            for (j=0; j<index_overview.children[i].children[0].children[0].children.length; j++) {
+                index.push(index_overview.children[i].children[0].children[0].children[j].textContent);
             }
             index_names.push(index);
         }
@@ -447,7 +471,7 @@
 
         console.assert(index_overview.children.length == result.queries_per_index.length)
         for (let i = 0; i < result.queries_per_index.length; i++) {
-            index_overview.children[i].children[2].innerHTML = result.queries_per_index[i];
+            index_overview.children[i].children[1].innerHTML = result.queries_per_index[i];
         }
     }
 
@@ -455,7 +479,7 @@
     function remove(element) {
         var removed_attribute = element.textContent;
         console.log('remove index_attribute: ' + removed_attribute);
-        let index_overview = element.parentNode.parentNode.parentNode;
+        let index_overview = element.parentNode.parentNode.parentNode.parentNode;
         console.log(index_overview.id);
         console.assert(index_overview.id.split('__').slice(-1) == 'index_overview');
 
@@ -465,7 +489,7 @@
 
         if (element.parentNode.children.length == 1) {
             // remove index
-            element.parentNode.parentNode.remove();
+            element.parentNode.parentNode.parentNode.remove();
 
         } else {
             // add attribute in dropdown
@@ -483,7 +507,7 @@
         let index_info_element = element.parentNode.parentNode.parentNode;
         let added_attribute = element.textContent;
         console.log(added_attribute);
-        let index_overview = element.parentNode.parentNode.parentNode.parentNode;
+        let index_overview = element.parentNode.parentNode.parentNode.parentNode.parentNode;
         console.log(index_overview.id);
         console.assert(index_overview.id.split('__').slice(-1) == 'index_overview');
 
@@ -515,7 +539,7 @@
 
         let result = getJson(apiUrl + 'extension_for_index/' + benchmark + '/' + added_index);
 
-        let index_element = '<div><div class="btn-group btn-group-sm add_index_button" role="group">';
+        let index_element = '<div><div class="index_attributes"><div class="btn-group btn-group-sm add_index_button" role="group">';
         index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + added_index + '" onclick="remove(this)">' + added_index + '<span class="glyphicon glyphicon-remove"></button>';
         index_element +='</div>';   // btn-group
         index_element += '<div class="dropdown add_index_button">' +
@@ -528,7 +552,7 @@
                 index_element += '<a class="dropdown-item" href="javascript: void(0);" onclick="addIndexAttribute(this)">' + result.extension_options[k] + '</a>';
             }
 
-            index_element += '</div></div>';  // dropdown-menu + dropdown
+            index_element += '</div></div></div>';  // dropdown-menu + dropdown
             index_element += '<div class="queries_per_index"></div>';
             index_element +='</div>';   // index element
 
@@ -548,7 +572,7 @@
         index_overview_element.innerHTML = '';
         for (var i = 0; i < indexes.length; i++) {
             var index = indexes[i];
-            var index_element = '<div id="' + approach_id + '__index' + i + '" ><div class="btn-group btn-group-sm add_index_button" role="group">';
+            var index_element = '<div id="' + approach_id + '__index' + i + '" ><div class="index_attributes"><div class="btn-group btn-group-sm add_index_button" role="group">';
                 for (var j = 0; j < index.length; j++) {
                     index_element +=  '<button type="button" class="btn btn-default index-attribute" value="' + index[j] + '" onclick="remove(this)">' + index[j] + '<span class="glyphicon glyphicon-remove"></button>';
             }
@@ -563,7 +587,7 @@
                 index_element += '<a class="dropdown-item" href="javascript: void(0);" onclick="addIndexAttribute(this)">' + extension_options[i][k] + '</a>';
             }
 
-            index_element += '</div></div>';  // dropdown-menu + dropdown
+            index_element += '</div></div></div>';  // dropdown-menu + dropdown
             index_element += '<div class="queries_per_index"></div>';
             index_element +='</div>';   // index element
             index_overview_element.innerHTML += index_element;
