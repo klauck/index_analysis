@@ -176,7 +176,7 @@
                 var dom_element = '<div id="' + approach_id + '__details" class="selection_details">\n' +
             '<button type="button" class="close approach_close" aria-label="Close" onclick="removeDetail(&quot;' + algorithm + '&quot;, &quot;' + memory_budget + '&quot;)"><span aria-hidden="true">&times;</span></button>' +
             '<h3>' + algorithm + '</h3>\n' +
-            '<div class="parameters"> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + '<span title="' + JSON.stringify(result.run_parameters) + '"> ... }<span/></div>\n' +
+            '<div class="parameters"> Parameters: ' + JSON.stringify(result.run_parameters, ['max_index_width', 'budget_MB', 'max_indexes'], 2).slice(0, -1) + "<span title='" + JSON.stringify(result.run_parameters, null, 2) + "'> ... }<span/></div>\n" +
             '<div><span id="' + approach_id + '__relative_cost' + '" class="approach_info">' + (overall_cost / cost_no_indexes * 100).toFixed(1) + ' %</span><span id="' + approach_id + '__storage_consumption' + '" class="approach_info">' + result.storage_consumption.toFixed(2) + ' GB</span></div>\n' +
             '<div><span class="approach_label">Workload Cost</span><span class="approach_label">Storage Consumption</span></div>\n' +
             '<hr class="hr" />\n' +
