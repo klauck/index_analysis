@@ -322,7 +322,7 @@ def create_app(test_config=None, instance_relative_config=True):
         datasets = []
         for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'relaxation']):
             result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
-
+            result.sort(key=lambda x: x[0])
             data = []
             for line in result:
                 data.append({'x': line[0] / 1000, 'y': sum(line[2]) / no_index_costs})
