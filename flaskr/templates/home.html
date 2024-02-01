@@ -289,12 +289,14 @@
         <!-- previously selected approach got deselected -->
         let approach_id = algorithm + '__' + memory_budget;
         let index = selectedAlgorithms.findIndex((element) => element[0] == algorithm && element[1] == memory_budget);
+        console.assert(index != -1);
         console.log('deselect: ' + approach_id);
         selectedAlgorithms.splice(index, 1);
         querySizeCharts.splice(index, 1);
-        let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm + ' ' + memory_budget);
-        console.log('chart costs remove ' + index2);
+        let index2 = queryCostsChart.data.datasets.findIndex((element) => element.label == algorithm);
+        console.assert(index != -1);
         queryCostsChart.data.datasets.splice(index2, 1);
+        queryCostsChart.update();
 <!--                if (selectedAlgorithms.length == 0) {-->
 <!--                    $('#cost_div').addClass('d-none');-->
 <!--                }-->
