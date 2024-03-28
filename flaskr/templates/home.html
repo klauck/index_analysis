@@ -135,7 +135,8 @@
           Workload: TPC-H (SF=10)
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item" href="#">TPC-H (SF=10)</a>
+          <a class="dropdown-item" onclick="set_benchmark('tpch', 'TPC-H (SF=10)')"  href="#">TPC-H (SF=10)</a>
+          <a class="dropdown-item" onclick="set_benchmark('tpcds', 'TPC-DS (SF=10)')" href="#">TPC-DS (SF=10)</a>
           <a class="dropdown-item" href="#">JOB</a>
         </div>
       </li>
@@ -154,7 +155,16 @@
     <script>
     let apiUrl = 'http://127.0.0.1:5000/';
 
-    var benchmark = 'tpch';
+    var benchmark = '';
+    selectedAlgorithms = [];
+    summaryData = null;
+    querySizeCharts = [];
+    summaryChart = null;
+    queryCostsChart = null;
+    cost_no_indexes = 0
+
+
+    set_benchmark('tpch', "TPC-H (SF=10)");
 
     function getJson(url) {
         let request = new XMLHttpRequest();
@@ -163,11 +173,155 @@
         return JSON.parse(request.responseText);
     }
 
-    var selectedAlgorithms = [];
-    var querySizeCharts = []
+    function set_benchmark(benchmark_name, text) {
+        benchmark = benchmark_name;
 
-    var summaryData = getJson(apiUrl + 'summary/' + benchmark);
-    console.log(summaryData);
+        $('#navbarDropdownMenuLink').text("Workload: " + text);
+
+        selectedAlgorithms = [];
+        querySizeCharts = [];
+        summaryData = getJson(apiUrl + 'summary/' + benchmark);
+        console.log(summaryData);
+        console.log(benchmark);
+        if (summaryChart) {
+            summaryChart.destroy();
+        }
+        if (queryCostsChart) {
+            queryCostsChart.destroy();
+        }
+
+        $('#details_per_selection').empty();
+
+        var ctx = document.getElementById('summaryChart').getContext('2d');
+        summaryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: summaryData
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Solution Summary: Cost Relative to Processing without Indexes.',
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                showLine: true,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        beginAtZero: true,
+                        ticks: {
+                            font: {
+                                size: 16
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'index storage consumption (GB)',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            font: {
+                                size: 16
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'relative workload cost',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                },
+                onClick: summaryOnClickHandler,
+            }
+        });
+
+        data = getJson(apiUrl + 'query_cost_no_indexes/' + benchmark);
+        cost_no_indexes = 0;
+        for (let i = 0; i < data.query_cost_no_index.length; i++) {
+            cost_no_indexes += data.query_cost_no_index[i];
+        }
+
+        var ctx = document.getElementById('queryCostsChart').getContext('2d');
+        queryCostsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.queries,
+                datasets: [{
+                    label: 'no indexes',
+                    data: data.query_cost_no_index
+                },
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Estimated processing cost per query',
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 16
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'query id',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            font: {
+                                size: 16
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'PostgreSQL query cost',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    console.log(benchmark);
 
     function summaryOnClickHandler(event, elements, chart) {
         console.log('summaryOnClickHandler' + elements.length);
@@ -305,134 +459,6 @@
         $(document.getElementById(approach_id + '__details')).remove();
 
     }
-
-    var ctx = document.getElementById('summaryChart').getContext('2d');
-    queryCostsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: summaryData
-        },
-        options: {
-            plugins: {
-                legend: {
-                    labels: {
-                        font: {
-                            size: 16
-                        }
-                    }
-                },
-                title: {
-                    display: true,
-                    text: 'Solution Summary: Cost Relative to Processing without Indexes.',
-                    font: {
-                        size: 16
-                    }
-                }
-            },
-            showLine: true,
-            scales: {
-                x: {
-                    type: 'linear',
-                    beginAtZero: true,
-                    ticks: {
-                        font: {
-                            size: 16
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'index storage consumption (GB)',
-                        font: {
-                            size: 16
-                        }
-                    }
-                },
-                y: {
-                    ticks: {
-                        font: {
-                            size: 16
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'relative workload cost',
-                        font: {
-                            size: 16
-                        }
-                    }
-                }
-            },
-            onClick: summaryOnClickHandler,
-        }
-    });
-
-    var data = getJson(apiUrl + 'query_cost_no_indexes/' + benchmark);
-    var cost_no_indexes = 0;
-    for (let i = 0; i < data.query_cost_no_index.length; i++) {
-        cost_no_indexes += data.query_cost_no_index[i];
-    }
-
-    var ctx = document.getElementById('queryCostsChart').getContext('2d');
-    queryCostsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.queries,
-            datasets: [{
-                label: 'no indexes',
-                data: data.query_cost_no_index
-            },
-            ]
-        },
-        options: {
-            plugins: {
-                legend: {
-                    labels: {
-                        font: {
-                            size: 16
-                        }
-                    }
-                },
-                title: {
-                    display: true,
-                    text: 'Estimated processing cost per query',
-                    font: {
-                        size: 16
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: {
-                        font: {
-                            size: 16
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'query id',
-                        font: {
-                            size: 16
-                        }
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        font: {
-                            size: 16
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: 'PostgreSQL query cost',
-                        font: {
-                            size: 16
-                        }
-                    }
-                }
-            }
-        }
-    });
 
     function updateDetails(index_overview) {
         let algorithm = index_overview.id.split('__')[0];

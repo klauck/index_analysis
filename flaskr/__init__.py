@@ -14,14 +14,9 @@ from selection.table_generator import TableGenerator
 from selection.query_generator import QueryGenerator
 from selection.workload import Workload
 
-CONFIG = {
-    "benchmark_name": "tpch",
-    "scale_factor": 10,
-    "queries": [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 22],
-}
+
 logging.basicConfig(level=logging.DEBUG)
 
-NUMBER_OF_QUERIES = 19
 
 ALGORITHMS = [
     'anytime',
@@ -60,6 +55,19 @@ POINT_STYLE = [
 ]
 
 
+def benchmark_config(benchmark_name):
+    if benchmark_name == 'tpch':
+        scale_factor = 10
+        queries = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 19, 21, 22]
+    elif benchmark_name == 'tpcds':
+        scale_factor = 10
+        queries = [1, 2, 3, 5, 7, 8, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 96, 97, 98, 99]
+    else:
+        assert False, f'unsupported benchmark: {benchmark_name}'
+
+    return {"scale_factor": scale_factor, "queries": queries, "number_of_queries": len(queries)}
+
+
 def create_app(test_config=None, instance_relative_config=True):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
@@ -90,10 +98,12 @@ def create_app(test_config=None, instance_relative_config=True):
 
     @app.route('/query_cost_no_indexes/<benchmark>')
     def query_cost_no_indexes(benchmark):
+        number_of_queries = benchmark_config(benchmark)['number_of_queries']
+        queries = benchmark_config(benchmark)['queries']
+
         no_index_result = parse_file(os.path.dirname(os.path.abspath(
-            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_{benchmark}_{number_of_queries}_queries.csv')
         query_cost_no_index = no_index_result[0][2]
-        queries = CONFIG['queries']
 
         # index_names, index_sizes, query_cost_information, query_cost_no_index = retrieve_index_sizes(benchmark)
         # print(index_names, index_sizes)
@@ -114,16 +124,16 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            benchmark, CONFIG["scale_factor"], generating_connector
+            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
         )
         database_name = table_generator.database_name()
         db_connector = PostgresDatabaseConnector(database_name)
 
         query_generator = QueryGenerator(
             benchmark,
-            CONFIG["scale_factor"],
+            benchmark_config(benchmark)['scale_factor'],
             db_connector,
-            CONFIG["queries"],
+            benchmark_config(benchmark)['queries'],
             table_generator.columns,
         )
 
@@ -175,7 +185,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            benchmark, CONFIG["scale_factor"], generating_connector
+            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
         )
 
         columns_per_name = {}
@@ -189,7 +199,7 @@ def create_app(test_config=None, instance_relative_config=True):
                 extension_options.append(column.name)
         return extension_options
 
-    def get_addable_indexes(indexes):
+    def get_addable_indexes(benchmark, indexes):
         """returns a list of single-attribute indexes that are not included in indexes"""
         # setup database connection Connection
         dbms_class = PostgresDatabaseConnector
@@ -197,7 +207,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            CONFIG["benchmark_name"], CONFIG["scale_factor"], generating_connector
+            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
         )
 
         addable_indexes = []
@@ -222,7 +232,7 @@ def create_app(test_config=None, instance_relative_config=True):
         extension_options_per_index = []
         for index in index_names:
             extension_options_per_index.append(get_index_extension_options(benchmark, index))
-        addable_indexes = get_addable_indexes(index_names)
+        addable_indexes = get_addable_indexes(benchmark, index_names)
 
         details = get_parsed_details(benchmark, algorithm, storage_budget)
         parameters = details['parameters']
@@ -316,12 +326,14 @@ def create_app(test_config=None, instance_relative_config=True):
 
     @app.route('/summary/<benchmark>')
     def summary(benchmark):
-        no_index_result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
+        number_of_queries = benchmark_config(benchmark)['number_of_queries']
+
+        no_index_result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_no_index_{benchmark}_{number_of_queries}_queries.csv')
         no_index_costs = sum(no_index_result[0][2])
 
         datasets = []
         for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'relaxation']):
-            result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
+            result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
             result.sort(key=lambda x: x[0])
             data = []
             for line in result:
@@ -339,10 +351,8 @@ def create_app(test_config=None, instance_relative_config=True):
         return jsonify(datasets)
 
     def get_indexes_per_algorithm_and_budget(benchmark, algorithm, budget):
-        if benchmark == 'tpch':
-            number_of_queries = 19
-        elif benchmark == 'tpcds':
-            number_of_queries = 90
+        number_of_queries = benchmark_config(benchmark)['number_of_queries']
+
         result = parse_file(os.path.dirname(os.path.abspath(
             __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
         indexes = None
@@ -359,10 +369,8 @@ def create_app(test_config=None, instance_relative_config=True):
         return indexes, index_sizes
 
     def get_parsed_details(benchmark, algorithm, budget):
-        if benchmark == 'tpch':
-            number_of_queries = 19
-        elif benchmark == 'tpcds':
-            number_of_queries = 90
+        number_of_queries = benchmark_config(benchmark)['number_of_queries']
+
         result = parse_file(os.path.dirname(os.path.abspath(
             __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
 
@@ -377,8 +385,10 @@ def create_app(test_config=None, instance_relative_config=True):
         return details
 
     def get_query_cost_per_algorithm_and_budget(benchmark, algorithm, budget):
+        number_of_queries = benchmark_config(benchmark)['number_of_queries']
+
         result = parse_file(os.path.dirname(os.path.abspath(
-            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{NUMBER_OF_QUERIES}_queries.csv')
+            __file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
         query_cost = None
         for line in result:
             if line[0] / 1000 == budget:
@@ -415,7 +425,7 @@ def create_app(test_config=None, instance_relative_config=True):
 
         # Attention: This might generate the benchmark tables
         table_generator = TableGenerator(
-            benchmark, CONFIG["scale_factor"], generating_connector
+            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
         )
         database_name = table_generator.database_name()
         db_connector = PostgresDatabaseConnector(database_name)
