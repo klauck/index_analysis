@@ -13,6 +13,7 @@ from selection.result_parser import parse_file
 from selection.table_generator import TableGenerator
 from selection.query_generator import QueryGenerator
 from selection.workload import Workload
+from selection.workload_parser import WorkloadParser
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -63,7 +64,12 @@ def benchmark_config(benchmark_name):
         scale_factor = 10
         queries = [1, 2, 3, 5, 7, 8, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 96, 97, 98, 99]
     else:
-        assert False, f'unsupported benchmark: {benchmark_name}'
+        assert WorkloadParser.is_custom_workload(benchmark_name), f'unsupported benchmark: {benchmark_name}'
+        if benchmark_name == 'Custom_vldb':
+            workload_parser = WorkloadParser('postgres', 'indexselection_tpch___10', benchmark_name)
+            workload = workload_parser.execute()
+            queries = list(range(len(workload.queries)))
+            scale_factor = None
 
     return {"scale_factor": scale_factor, "queries": queries, "number_of_queries": len(queries)}
 
@@ -117,31 +123,42 @@ def create_app(test_config=None, instance_relative_config=True):
 
     @app.route('/index_calculation/<benchmark>/<index_names_string>')
     def index_calculation(benchmark, index_names_string):
-
-        # setup database connection Connection
+        # TODO: refactor
         dbms_class = PostgresDatabaseConnector
-        generating_connector = dbms_class(None, autocommit=True)
-
-        # Attention: This might generate the benchmark tables
-        table_generator = TableGenerator(
-            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
-        )
-        database_name = table_generator.database_name()
-        db_connector = PostgresDatabaseConnector(database_name)
-
-        query_generator = QueryGenerator(
-            benchmark,
-            benchmark_config(benchmark)['scale_factor'],
-            db_connector,
-            benchmark_config(benchmark)['queries'],
-            table_generator.columns,
-        )
-
         columns_per_name = {}
-        for column in table_generator.columns:
-            columns_per_name[column.name] = column
 
-        workload = Workload(query_generator.queries)
+        if benchmark == 'Custom_vldb':
+            database_name = 'indexselection_tpch___10'
+            workload_parser = WorkloadParser('postgres', database_name, benchmark)
+            tables = workload_parser.get_tables()
+            for table_name in tables:
+                table = tables[table_name]
+                for column in table.columns:
+                    columns_per_name[column.name] = column
+            db_connector = PostgresDatabaseConnector(database_name)
+            workload = workload_parser.execute()
+        else:
+            generating_connector = dbms_class(None, autocommit=True)
+            # Attention: This might generate the benchmark tables
+            table_generator = TableGenerator(
+                benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
+            )
+            database_name = table_generator.database_name()
+            db_connector = PostgresDatabaseConnector(database_name)
+
+            query_generator = QueryGenerator(
+                benchmark,
+                benchmark_config(benchmark)['scale_factor'],
+                db_connector,
+                benchmark_config(benchmark)['queries'],
+                table_generator.columns,
+            )
+
+            for column in table_generator.columns:
+                columns_per_name[column.name] = column
+
+            workload = Workload(query_generator.queries)
+
 
         indexes = []
         for index_string_list in json.loads(index_names_string):
@@ -179,18 +196,30 @@ def create_app(test_config=None, instance_relative_config=True):
 
     def get_index_extension_options(benchmark, index):
         """returns a list of attributes to extend an index"""
-        # setup database connection Connection
+        # TODO: refactor
         dbms_class = PostgresDatabaseConnector
-        generating_connector = dbms_class(None, autocommit=True)
-
-        # Attention: This might generate the benchmark tables
-        table_generator = TableGenerator(
-            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
-        )
-
         columns_per_name = {}
-        for column in table_generator.columns:
-            columns_per_name[column.name] = column
+
+        if benchmark == 'Custom_vldb':
+            database_name = 'indexselection_tpch___10'
+            workload_parser = WorkloadParser('postgres', database_name, benchmark)
+            tables = workload_parser.get_tables()
+            for table_name in tables:
+                table = tables[table_name]
+                for column in table.columns:
+                    columns_per_name[column.name] = column
+        else:
+            generating_connector = dbms_class(None, autocommit=True)
+            # Attention: This might generate the benchmark tables
+            table_generator = TableGenerator(
+                benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
+            )
+            database_name = table_generator.database_name()
+
+            for column in table_generator.columns:
+                columns_per_name[column.name] = column
+
+        db_connector = PostgresDatabaseConnector(database_name)
 
         index_table = columns_per_name[index[0]].table
         extension_options = []
@@ -203,16 +232,27 @@ def create_app(test_config=None, instance_relative_config=True):
         """returns a list of single-attribute indexes that are not included in indexes"""
         # setup database connection Connection
         dbms_class = PostgresDatabaseConnector
-        generating_connector = dbms_class(None, autocommit=True)
+        columns = []
 
-        # Attention: This might generate the benchmark tables
-        table_generator = TableGenerator(
-            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
-        )
+        if benchmark == 'Custom_vldb':
+            database_name = 'indexselection_tpch___10'
+            workload_parser = WorkloadParser('postgres', database_name, benchmark)
+            tables = workload_parser.get_tables()
+            for table_name in tables:
+                table = tables[table_name]
+                for column in table.columns:
+                    columns.append(column)
+        else:
+            generating_connector = dbms_class(None, autocommit=True)
+            # Attention: This might generate the benchmark tables
+            table_generator = TableGenerator(
+                benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
+            )
+            columns = table_generator.columns
 
         addable_indexes = []
 
-        for column in table_generator.columns:
+        for column in columns:
             if [column.name] not in indexes:
                 addable_indexes.append(column.name)
         addable_indexes.sort()
@@ -332,7 +372,13 @@ def create_app(test_config=None, instance_relative_config=True):
         no_index_costs = sum(no_index_result[0][2])
 
         datasets = []
-        for i, algorithm in enumerate(['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'relaxation']):
+
+        if WorkloadParser.is_custom_workload(benchmark):
+            algorithms = ['extend']
+        else:
+            algorithms = ['anytime', 'auto_admin', 'db2advis', 'dexter', 'drop', 'extend', 'relaxation']
+
+        for i, algorithm in enumerate(algorithms):
             result = parse_file(os.path.dirname(os.path.abspath(__file__)) + f'/../index_selection_evaluation/benchmark_results/results_{algorithm}_{benchmark}_{number_of_queries}_queries.csv')
             result.sort(key=lambda x: x[0])
             data = []
@@ -418,21 +464,30 @@ def create_app(test_config=None, instance_relative_config=True):
         return jsonify(costs_per_algorithm)
 
     def estimate_index_sizes(benchmark, index_string_list):
-        # TODO: put first part in separate function
-        # setup database connection Connection
+        # TODO: refactor
         dbms_class = PostgresDatabaseConnector
-        generating_connector = dbms_class(None, autocommit=True)
-
-        # Attention: This might generate the benchmark tables
-        table_generator = TableGenerator(
-            benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
-        )
-        database_name = table_generator.database_name()
-        db_connector = PostgresDatabaseConnector(database_name)
-
         columns_per_name = {}
-        for column in table_generator.columns:
-            columns_per_name[column.name] = column
+
+        if benchmark == 'Custom_vldb':
+            database_name = 'indexselection_tpch___10'
+            workload_parser = WorkloadParser('postgres', database_name, benchmark)
+            tables = workload_parser.get_tables()
+            for table_name in tables:
+                table = tables[table_name]
+                for column in table.columns:
+                    columns_per_name[column.name] = column
+        else:
+            generating_connector = dbms_class(None, autocommit=True)
+            # Attention: This might generate the benchmark tables
+            table_generator = TableGenerator(
+                benchmark, benchmark_config(benchmark)['scale_factor'], generating_connector
+            )
+            database_name = table_generator.database_name()
+
+            for column in table_generator.columns:
+                columns_per_name[column.name] = column
+
+        db_connector = PostgresDatabaseConnector(database_name)
 
         indexes = []
         for column_string_list in index_string_list:
