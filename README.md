@@ -2,6 +2,10 @@
 
 A web application for analyzing database index selection approaches.
 
+Based on our extensible and open-source [index selection evaluation platform](https://github.com/hyrise/index_selection_evaluation).
+
+![alt text](https://github.com/klauck/index_analysis/blob/main/screenshot.png?raw=true)
+
 ## Installation and Setup
 
 The application is built on our index selection evaluation platform,
@@ -52,3 +56,7 @@ python -m selection [CONIGURATION.JSON]
 ```
 flask --app flaskr run --debug
 ```
+
+## Extensibility
+
+Workloads and results to analyze can be added or edited in the [HTML's dropdown](https://github.com/klauck/index_analysis/blob/main/flaskr/templates/home.html) and [backend's benchmark configuration](https://github.com/klauck/index_analysis/blob/main/flaskr/__init__.py).
